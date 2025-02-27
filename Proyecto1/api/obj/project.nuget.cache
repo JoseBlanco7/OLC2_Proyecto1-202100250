@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "AmSep/o77m4=",
+  "success": true,
+  "projectFilePath": "/home/blanco/Escritorio/OLC2_P1_202100250/Proyecto1/api/api.csproj",
+  "expectedPackageFiles": [
+    "/home/blanco/.nuget/packages/antlr4.runtime.standard/4.13.1/antlr4.runtime.standard.4.13.1.nupkg.sha512",
+    "/home/blanco/.nuget/packages/microsoft.aspnetcore.openapi/9.0.1/microsoft.aspnetcore.openapi.9.0.1.nupkg.sha512",
+    "/home/blanco/.nuget/packages/microsoft.openapi/1.6.17/microsoft.openapi.1.6.17.nupkg.sha512"
+  ],
+  "logs": []
+}
