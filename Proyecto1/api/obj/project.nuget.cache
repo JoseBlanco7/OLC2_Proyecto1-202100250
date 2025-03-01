@@ -1,12 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "AmSep/o77m4=",
+  "dgSpecHash": "/NfwDijUke0=",
   "success": true,
-  "projectFilePath": "/home/blanco/Escritorio/OLC2_P1_202100250/Proyecto1/api/api.csproj",
+  "projectFilePath": "C:\\Users\\cjbg9\\Desktop\\compi2\\G4_Fase3_FortranPEG\\OLC2_Proyecto1-202100250\\Proyecto1\\api\\api.csproj",
   "expectedPackageFiles": [
-    "/home/blanco/.nuget/packages/antlr4.runtime.standard/4.13.1/antlr4.runtime.standard.4.13.1.nupkg.sha512",
-    "/home/blanco/.nuget/packages/microsoft.aspnetcore.openapi/9.0.1/microsoft.aspnetcore.openapi.9.0.1.nupkg.sha512",
-    "/home/blanco/.nuget/packages/microsoft.openapi/1.6.17/microsoft.openapi.1.6.17.nupkg.sha512"
+    "C:\\Users\\cjbg9\\.nuget\\packages\\antlr4.runtime.standard\\4.13.1\\antlr4.runtime.standard.4.13.1.nupkg.sha512",
+    "C:\\Users\\cjbg9\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.1\\microsoft.aspnetcore.openapi.9.0.1.nupkg.sha512",
+    "C:\\Users\\cjbg9\\.nuget\\packages\\microsoft.openapi\\1.6.17\\microsoft.openapi.1.6.17.nupkg.sha512"
   ],
   "logs": []
 }

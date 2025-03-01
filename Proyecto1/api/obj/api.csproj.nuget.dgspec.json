@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/home/blanco/Escritorio/OLC2_P1_202100250/Proyecto1/api/api.csproj": {}
+    "C:\\Users\\cjbg9\\Desktop\\compi2\\G4_Fase3_FortranPEG\\OLC2_Proyecto1-202100250\\Proyecto1\\api\\api.csproj": {}
   },
   "projects": {
-    "/home/blanco/Escritorio/OLC2_P1_202100250/Proyecto1/api/api.csproj": {
+    "C:\\Users\\cjbg9\\Desktop\\compi2\\G4_Fase3_FortranPEG\\OLC2_Proyecto1-202100250\\Proyecto1\\api\\api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/blanco/Escritorio/OLC2_P1_202100250/Proyecto1/api/api.csproj",
+        "projectUniqueName": "C:\\Users\\cjbg9\\Desktop\\compi2\\G4_Fase3_FortranPEG\\OLC2_Proyecto1-202100250\\Proyecto1\\api\\api.csproj",
         "projectName": "api",
-        "projectPath": "/home/blanco/Escritorio/OLC2_P1_202100250/Proyecto1/api/api.csproj",
-        "packagesPath": "/home/blanco/.nuget/packages/",
-        "outputPath": "/home/blanco/Escritorio/OLC2_P1_202100250/Proyecto1/api/obj/",
+        "projectPath": "C:\\Users\\cjbg9\\Desktop\\compi2\\G4_Fase3_FortranPEG\\OLC2_Proyecto1-202100250\\Proyecto1\\api\\api.csproj",
+        "packagesPath": "C:\\Users\\cjbg9\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\cjbg9\\Desktop\\compi2\\G4_Fase3_FortranPEG\\OLC2_Proyecto1-202100250\\Proyecto1\\api\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/home/blanco/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\cjbg9\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -72,7 +72,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/home/blanco/dotnet/sdk/9.0.102/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.103/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
