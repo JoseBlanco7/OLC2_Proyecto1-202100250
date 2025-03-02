@@ -20,6 +20,8 @@ typeClause
     | 'float64'
     | 'bool'
     | 'string'
+    | 'rune'
+    | 'nil'
     // Agrega otros tipos que requieras
     ;
 stmt : expr ';'?                                         #ExprStmt

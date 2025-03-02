@@ -25,21 +25,35 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>{
     public override ValueWrapper VisitVarDeclaciones(LanguageParser.VarDeclacionesContext context)
 {
     // Caso 1: var <id> <tipo> = expr
-    if (context.typeClause() != null && context.expr() != null && context.GetText().Contains("="))
-    {
-        string id = context.ID().GetText();
-        string declaredType = context.typeClause().GetText();
-        ValueWrapper value = Visit(context.expr());
-        
-        // Realizar conversión implícita de int a float64 si es necesario
-        if (declaredType == "float64" && value is IntValue intVal)
-        {
-            value = new FloatValue(intVal.Value);
-        }
-        
-        Currentenvironment.DeclareVariable(id, value, context.Start);
-        return defaultVoid;
+if (context.typeClause() != null && context.expr() != null && context.GetText().Contains("="))
+{
+    string id = context.ID().GetText();
+    string declaredType = context.typeClause().GetText();
+    ValueWrapper value = Visit(context.expr());
+    
+    // Validar compatibilidad de tipos
+    if (declaredType == "int" && value is FloatValue) {
+        throw new SemanticError($"No se puede asignar un float64 a la variable '{id}' de tipo int.", context.Start);
     }
+    
+    // Realizar conversión implícita de int a float64 si es necesario
+    if (declaredType == "float64" && value is IntValue intVal)
+    {
+        value = new FloatValue(intVal.Value);
+    }
+    // Verificar que los tipos sean compatibles
+    else if ((declaredType == "int" && !(value is IntValue)) ||
+             (declaredType == "float64" && !(value is FloatValue || value is IntValue)) ||
+             (declaredType == "bool" && !(value is BoolValue)) ||
+             (declaredType == "string" && !(value is StringValue))||
+             (declaredType == "rune" && !(value is RuneValue)))
+    {
+        throw new SemanticError($"No se puede asignar un valor de tipo {value.TypeName} a una variable de tipo {declaredType}.", context.Start);
+    }
+    
+    Currentenvironment.DeclareVariable(id, value, context.Start);
+    return defaultVoid;
+}
     // Caso 2: var <id> <tipo> (sin valor)
     else if (context.typeClause() != null && context.expr() == null)
     {
@@ -52,6 +66,7 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>{
             "float64" => new FloatValue(0.0),
             "bool" => new BoolValue(false),
             "string" => new StringValue(""),
+            "rune" => new RuneValue(' '),   
             _ => throw new SemanticError($"Tipo no soportado: {declaredType}", context.Start)
         };
         
