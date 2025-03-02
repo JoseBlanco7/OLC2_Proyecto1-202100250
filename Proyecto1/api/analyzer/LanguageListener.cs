@@ -62,6 +62,16 @@ public interface ILanguageListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitVarDeclaciones([NotNull] LanguageParser.VarDeclacionesContext context);
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="LanguageParser.typeClause"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterTypeClause([NotNull] LanguageParser.TypeClauseContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="LanguageParser.typeClause"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitTypeClause([NotNull] LanguageParser.TypeClauseContext context);
+	/// <summary>
 	/// Enter a parse tree produced by the <c>ExprStmt</c>
 	/// labeled alternative in <see cref="LanguageParser.stmt"/>.
 	/// </summary>
@@ -264,6 +274,18 @@ public interface ILanguageListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitInt([NotNull] LanguageParser.IntContext context);
 	/// <summary>
+	/// Enter a parse tree produced by the <c>Nil</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterNil([NotNull] LanguageParser.NilContext context);
+	/// <summary>
+	/// Exit a parse tree produced by the <c>Nil</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitNil([NotNull] LanguageParser.NilContext context);
+	/// <summary>
 	/// Enter a parse tree produced by the <c>Float</c>
 	/// labeled alternative in <see cref="LanguageParser.expr"/>.
 	/// </summary>
@@ -335,6 +357,18 @@ public interface ILanguageListener : IParseTreeListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	void ExitEquality([NotNull] LanguageParser.EqualityContext context);
+	/// <summary>
+	/// Enter a parse tree produced by the <c>Rune</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterRune([NotNull] LanguageParser.RuneContext context);
+	/// <summary>
+	/// Exit a parse tree produced by the <c>Rune</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitRune([NotNull] LanguageParser.RuneContext context);
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="LanguageParser.call"/>.
 	/// </summary>

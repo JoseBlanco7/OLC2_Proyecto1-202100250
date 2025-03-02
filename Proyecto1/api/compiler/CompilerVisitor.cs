@@ -22,12 +22,56 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>{
     }
 
     //VisitVarDeclaciones
-    public override ValueWrapper VisitVarDeclaciones(LanguageParser.VarDeclacionesContext context){
+    public override ValueWrapper VisitVarDeclaciones(LanguageParser.VarDeclacionesContext context)
+{
+    // Caso 1: var <id> <tipo> = expr
+    if (context.typeClause() != null && context.expr() != null && context.GetText().Contains("="))
+    {
         string id = context.ID().GetText();
+        string declaredType = context.typeClause().GetText();
         ValueWrapper value = Visit(context.expr());
+        
+        // Realizar conversión implícita de int a float64 si es necesario
+        if (declaredType == "float64" && value is IntValue intVal)
+        {
+            value = new FloatValue(intVal.Value);
+        }
+        
         Currentenvironment.DeclareVariable(id, value, context.Start);
         return defaultVoid;
     }
+    // Caso 2: var <id> <tipo> (sin valor)
+    else if (context.typeClause() != null && context.expr() == null)
+    {
+        string id = context.ID().GetText();
+        string declaredType = context.typeClause().GetText();
+        
+        // Asignar un valor por defecto según el tipo
+        ValueWrapper defaultValue = declaredType switch {
+            "int" => new IntValue(0),
+            "float64" => new FloatValue(0.0),
+            "bool" => new BoolValue(false),
+            "string" => new StringValue(""),
+            _ => throw new SemanticError($"Tipo no soportado: {declaredType}", context.Start)
+        };
+        
+        Currentenvironment.DeclareVariable(id, defaultValue, context.Start);
+        return defaultVoid;
+    }
+    // Caso 3: <id> := expr (inferencia de tipo)
+    else if (context.GetText().Contains(":="))
+    {
+        string id = context.ID().GetText();
+        ValueWrapper value = Visit(context.expr());
+        
+        Currentenvironment.DeclareVariable(id, value, context.Start);
+        return defaultVoid;
+    }
+    else
+    {
+        throw new SemanticError("Formato de declaración de variable no reconocido.", context.Start);
+    }
+}
     //VisitExprStmt
     public override ValueWrapper VisitExprStmt(LanguageParser.ExprStmtContext context){
         return Visit(context.expr());
@@ -39,11 +83,13 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>{
         //output += value + "\n";
         output += value switch{
             IntValue i => i.Value.ToString(),
-            FloatValue f => f.Value.ToString(),
+            FloatValue f => string.Format("{0:0.0#####}", f.Value),
             StringValue s => s.Value,
             BoolValue b => b.Value.ToString(),
+            RuneValue r => r.Value.ToString(),
             VoidValue v => "void",
             FunctionValue fn => "<function " + fn.name + ">", 
+            NilValue _ => "nil",
             _ => throw new SemanticError($"Tipo no soportado: {value.GetType()}", context.Start)
         } + "";
         output += "\n";
@@ -66,14 +112,16 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>{
 
     //VisitNegate
     public override ValueWrapper VisitNegate(LanguageParser.NegateContext context){
-        //return -Visit(context.expr());
-        ValueWrapper value = Visit(context.expr());
-        return value switch{
-            IntValue i => new IntValue(-i.Value),
-            FloatValue f => new FloatValue(-f.Value),
-            _ => throw new SemanticError($"Operacion no soportada: -{value.GetType()}", context.Start)
-        };
+    ValueWrapper value = Visit(context.expr());
+    if (value is NilValue) {
+        throw new SemanticError("Operacion no soportada en valor nil", context.Start);
     }
+    return value switch{
+        IntValue i => new IntValue(-i.Value),
+        FloatValue f => new FloatValue(-f.Value),
+        _ => throw new SemanticError($"Operacion no soportada: -{value.GetType()}", context.Start)
+    };
+}
 
 
     //VisitInt
@@ -82,22 +130,28 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>{
     }
     //VisitMulDiv
     public override ValueWrapper VisitMulDiv(LanguageParser.MulDivContext context){
-        ValueWrapper left = Visit(context.expr(0));
-        ValueWrapper right = Visit(context.expr(1));
-        var op = context.op.Text;
-        return (left, right, op) switch{
-            (IntValue l, IntValue r, "*") => new IntValue(l.Value * r.Value),
-            (IntValue l, IntValue r, "/") => new IntValue(l.Value / r.Value),
-            (FloatValue l, FloatValue r, "*") => new FloatValue(l.Value * r.Value),
-            (FloatValue l, FloatValue r, "/") => new FloatValue(l.Value / r.Value),
-            (StringValue l, IntValue r, "*") => new StringValue(string.Concat(Enumerable.Repeat(l.Value, r.Value))),
-            _ => throw new SemanticError($"Operacion no soportada: {left.GetType()} {op} {right.GetType()}", context.Start)
-        };
+    ValueWrapper left = Visit(context.expr(0));
+    ValueWrapper right = Visit(context.expr(1));
+    if (left is NilValue || right is NilValue) {
+        throw new SemanticError("Operacion no soportada en valor nil", context.Start);
     }
+    var op = context.op.Text;
+    return (left, right, op) switch{
+        (IntValue l, IntValue r, "*") => new IntValue(l.Value * r.Value),
+        (IntValue l, IntValue r, "/") => new IntValue(l.Value / r.Value),
+        (FloatValue l, FloatValue r, "*") => new FloatValue(l.Value * r.Value),
+        (FloatValue l, FloatValue r, "/") => new FloatValue(l.Value / r.Value),
+        (StringValue l, IntValue r, "*") => new StringValue(string.Concat(Enumerable.Repeat(l.Value, r.Value))),
+        _ => throw new SemanticError($"Operacion no soportada: {left.GetType()} {op} {right.GetType()}", context.Start)
+    };
+}
     //VisitAddSub
     public override ValueWrapper VisitAddSub(LanguageParser.AddSubContext context){
         ValueWrapper left = Visit(context.expr(0));
         ValueWrapper right = Visit(context.expr(1));
+        if (left is NilValue || right is NilValue) {
+        throw new SemanticError("Operacion no soportada en valor nil", context.Start);
+    }
         var op = context.op.Text;
         return (left, right, op) switch{
             (IntValue l, IntValue r, "+") => new IntValue(l.Value + r.Value),
@@ -124,12 +178,31 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>{
     string rawString = context.STRING().GetText();
     // Eliminar la primera y última comilla
     string unquoted = rawString.Substring(1, rawString.Length - 2);
-    return new StringValue(unquoted);
+    //remplazar las secuencias de escape
+    string processedString = unquoted
+        .Replace("\\\"", "\"")
+        .Replace("\\\\", "\\")
+        .Replace("\\n", "\n")
+        .Replace("\\r", "\r")
+        .Replace("\\t", "\t");
+    return new StringValue(processedString);
 }
+
+    //VisitRune
+    public override ValueWrapper VisitRune(LanguageParser.RuneContext context) {
+    string rawRune = context.RUNE().GetText();
+    // Eliminar las comillas simples
+    char runeValue = rawRune[1];
+    return new RuneValue(runeValue);
+}
+    
     //VisitRelational
     public override ValueWrapper VisitRelational(LanguageParser.RelationalContext context){
         ValueWrapper left = Visit(context.expr(0));
         ValueWrapper right = Visit(context.expr(1));
+        if (left is NilValue || right is NilValue) {
+        throw new SemanticError("Operacion no soportada en valor nil", context.Start);
+        }   
         var op = context.op.Text;
         return (left, right, op) switch{
             (IntValue l, IntValue r, "<") => new BoolValue(l.Value < r.Value),
@@ -156,6 +229,9 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>{
     public override ValueWrapper VisitEquality(LanguageParser.EqualityContext context){
         ValueWrapper left = Visit(context.expr(0));
         ValueWrapper right = Visit(context.expr(1));
+        if (left is NilValue || right is NilValue) {
+        throw new SemanticError("Operacion no soportada en valor nil", context.Start);
+        }
         var op = context.op.Text;
         return (left, right, op) switch{
             (IntValue l, IntValue r, "==") => new BoolValue(l.Value == r.Value),
@@ -298,6 +374,12 @@ var lastEnvironment = Currentenvironment;
         return invocable.Invoke(arguments, this);
 
     }
+
+    // VisitNil
+    public override ValueWrapper VisitNil(LanguageParser.NilContext context){
+        return new NilValue();
+    }
+    
 
     
 }

@@ -73,6 +73,18 @@ public partial class LanguageBaseListener : ILanguageListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitVarDeclaciones([NotNull] LanguageParser.VarDeclacionesContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="LanguageParser.typeClause"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterTypeClause([NotNull] LanguageParser.TypeClauseContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="LanguageParser.typeClause"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitTypeClause([NotNull] LanguageParser.TypeClauseContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by the <c>ExprStmt</c>
 	/// labeled alternative in <see cref="LanguageParser.stmt"/>.
 	/// <para>The default implementation does nothing.</para>
@@ -309,6 +321,20 @@ public partial class LanguageBaseListener : ILanguageListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitInt([NotNull] LanguageParser.IntContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by the <c>Nil</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterNil([NotNull] LanguageParser.NilContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>Nil</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitNil([NotNull] LanguageParser.NilContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by the <c>Float</c>
 	/// labeled alternative in <see cref="LanguageParser.expr"/>.
 	/// <para>The default implementation does nothing.</para>
@@ -392,6 +418,20 @@ public partial class LanguageBaseListener : ILanguageListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitEquality([NotNull] LanguageParser.EqualityContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>Rune</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterRune([NotNull] LanguageParser.RuneContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>Rune</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitRune([NotNull] LanguageParser.RuneContext context) { }
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="LanguageParser.call"/>.
 	/// <para>The default implementation does nothing.</para>
