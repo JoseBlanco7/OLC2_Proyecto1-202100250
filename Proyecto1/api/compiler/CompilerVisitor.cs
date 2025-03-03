@@ -8,6 +8,18 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>{
     public string output = "";
     private Environment Currentenvironment;
 
+    private int loopDepth = 0;  // Profundidad de bucles anidados
+private int switchDepth = 0; // Profundidad de switches anidados
+
+// Métodos auxiliares para verificar el contexto
+private bool InLoop() {
+    return loopDepth > 0;
+}
+
+private bool InLoopOrSwitch() {
+    return loopDepth > 0 || switchDepth > 0;
+}
+
     public CompilerVisitor(){
         Currentenvironment = new Environment(null);
         Embeded.Generate(Currentenvironment);
@@ -440,18 +452,138 @@ public override ValueWrapper VisitAssignSub(LanguageParser.AssignSubContext cont
     }   
     
     //VisitIfStmt
-    public override ValueWrapper VisitIfStmt(LanguageParser.IfStmtContext context){
-        ValueWrapper condition = Visit(context.expr());
-        if(condition is not BoolValue){
-            throw new SemanticError("Condicion no booleana", context.Start);
+   public override ValueWrapper VisitIfStmt(LanguageParser.IfStmtContext context) {
+    // Evalúa la condición principal del if
+    ValueWrapper condition = Visit(context.expr());
+    if (condition is not BoolValue) {
+        throw new SemanticError("Condición no booleana", context.Start);
+    }
+    
+    // Si la condición es verdadera, ejecuta el bloque if
+    if ((condition as BoolValue).Value) {
+        return Visit(context.stmt());
+    } 
+    
+    // Procesar bloques else if en orden
+    var elseifStmts = context.elseifStmt();
+    if (elseifStmts != null) {
+        for (int i = 0; i < elseifStmts.Length; i++) {
+            var elseifStmt = elseifStmts[i];
+            ValueWrapper elseifCondition = Visit(elseifStmt.expr());
+            
+            if (elseifCondition is not BoolValue) {
+                throw new SemanticError("Condición no booleana en else if", elseifStmt.Start);
+            }
+            
+            if ((elseifCondition as BoolValue).Value) {
+                return Visit(elseifStmt.stmt());
+            }
         }
-        if ((condition as BoolValue).Value){
-            Visit(context.stmt(0));
-    }else if(context.stmt().Length > 1){
-        Visit(context.stmt(1));
     }
+    
+    // Si no se cumplió ninguna condición y hay un else, ejecútalo
+    if (context.elseStmt() != null) {
+        return Visit(context.elseStmt());
+    }
+    
     return defaultVoid;
+}
+
+    //visitSwitchStmt
+public override ValueWrapper VisitSwitchStmt(LanguageParser.SwitchStmtContext context) {
+    switchDepth++; // Incrementar contador de switch
+    
+    try {
+        // Evaluar la expresión del switch
+        ValueWrapper switchValue = Visit(context.expr());
+        
+        bool matched = false;
+        
+        try {
+            // Recorrer todos los cases
+            if (context.caseStmt() != null) {
+                foreach (var caseContext in context.caseStmt()) {
+                    // Evaluar la expresión del case
+                    ValueWrapper caseValue = Visit(caseContext.expr());
+                    
+                    // Comparar los valores (solo si aún no ha habido una coincidencia)
+                    if (!matched && AreEqual(switchValue, caseValue)) {
+                        matched = true;
+                        
+                        // Ejecutar las declaraciones de este case
+                        Environment previousEnvironment = Currentenvironment;
+                        Currentenvironment = new Environment(previousEnvironment);
+                        
+                        try {
+                            foreach (var decl in caseContext.declaraciones()) {
+                                Visit(decl);
+                            }
+                        } catch (BreakException) {
+                            // Si hay un break, sale del switch
+                            Currentenvironment = previousEnvironment;
+                            return defaultVoid;
+                        }
+                        
+                        Currentenvironment = previousEnvironment;
+                    }
+                }
+            }
+            
+            // Si no hubo coincidencia y hay default, ejecutarlo
+            if (!matched && context.defaultStmt() != null) {
+                Environment previousEnvironment = Currentenvironment;
+                Currentenvironment = new Environment(previousEnvironment);
+                
+                try {
+                    foreach (var decl in context.defaultStmt().declaraciones()) {
+                        Visit(decl);
+                    }
+                } catch (BreakException) {
+                    // Si hay un break, sale del switch
+                    Currentenvironment = previousEnvironment;
+                    return defaultVoid;
+                }
+                
+                Currentenvironment = previousEnvironment;
+            }
+            
+            return defaultVoid;
+        } catch (BreakException) {
+            // Si hay break, sale del switch
+            return defaultVoid;
+        }
     }
+    finally {
+        switchDepth--; // Decrementar contador de switch
+    }
+}
+
+// Método auxiliar para comparar valores
+private bool AreEqual(ValueWrapper value1, ValueWrapper value2) {
+    if (value1 is IntValue v1Int && value2 is IntValue v2Int) {
+        return v1Int.Value == v2Int.Value;
+    } 
+    else if (value1 is FloatValue v1Float && value2 is FloatValue v2Float) {
+        return v1Float.Value == v2Float.Value;
+    }
+    else if (value1 is IntValue v1IntMix && value2 is FloatValue v2FloatMix) {
+        return v1IntMix.Value == v2FloatMix.Value;
+    }
+    else if (value1 is FloatValue v1FloatMix && value2 is IntValue v2IntMix) {
+        return v1FloatMix.Value == v2IntMix.Value;
+    }
+    else if (value1 is StringValue v1Str && value2 is StringValue v2Str) {
+        return v1Str.Value == v2Str.Value;
+    }
+    else if (value1 is BoolValue v1Bool && value2 is BoolValue v2Bool) {
+        return v1Bool.Value == v2Bool.Value;
+    }
+    else if (value1 is RuneValue v1Rune && value2 is RuneValue v2Rune) {
+        return v1Rune.Value == v2Rune.Value;
+    }
+    // Valores de diferentes tipos nunca son iguales
+    return false;
+}
 
     //VisitWhileStmt
     public override ValueWrapper VisitWhileStmt(LanguageParser.WhileStmtContext context){
@@ -470,7 +602,10 @@ public override ValueWrapper VisitAssignSub(LanguageParser.AssignSubContext cont
     }
 
     //VisitForStmt
-    public override ValueWrapper VisitForStmt(LanguageParser.ForStmtContext context){
+    public override ValueWrapper VisitForStmt(LanguageParser.ForStmtContext context) {
+    loopDepth++; // Incrementar contador de bucles
+    
+    try {
         //Guardamos el entorno anterior:
         Environment previousEnvironment = Currentenvironment;
         //Creamos un nuevo entorno:
@@ -482,51 +617,117 @@ public override ValueWrapper VisitAssignSub(LanguageParser.AssignSubContext cont
         //Restauramos el entorno anterior:
         Currentenvironment = previousEnvironment;
         return defaultVoid;
-    }  
+    }
+    finally {
+        loopDepth--; // Decrementar contador de bucles
+    }
+}
 
-    public void VisitForBody(LanguageParser.ForStmtContext context){
-        ValueWrapper condition = Visit(context.expr(0));
-var lastEnvironment = Currentenvironment;
+    //VisitForConditionStmt
+    public override ValueWrapper VisitForConditionStmt(LanguageParser.ForConditionStmtContext context) {
+    loopDepth++; // Incrementar contador de bucles
+    
+    try {
+        // Crear nuevo entorno
+        Environment previousEnvironment = Currentenvironment;
+        Currentenvironment = new Environment(previousEnvironment);
         
-        if (condition is not BoolValue){
-            throw new SemanticError("Condicion invalida", context.Start);
-        }  
-        try{
-            while(condition is BoolValue boolCondition && boolCondition.Value){
+        // Evalúa la condición
+        ValueWrapper condition = Visit(context.expr());
+        if (condition is not BoolValue) {
+            throw new SemanticError("Condición no booleana en for", context.Start);
+        }
+        
+        try {
+            // Mientras la condición sea verdadera
+            while ((condition as BoolValue).Value) {
+                try {
+                    // Ejecuta el cuerpo del bucle
+                    Visit(context.stmt());
+                    
+                    // Reevalúa la condición
+                    condition = Visit(context.expr());
+                    if (condition is not BoolValue) {
+                        throw new SemanticError("Condición no booleana en for", context.Start);
+                    }
+                } catch (ContinueException) {
+                    // Si hay un continue, simplemente reevalúa la condición
+                    condition = Visit(context.expr());
+                    if (condition is not BoolValue) {
+                        throw new SemanticError("Condición no booleana en for", context.Start);
+                    }
+                }
+            }
+        } catch (BreakException) {
+            // Si hay un break, sale del bucle
+        }
+        
+        // Restaurar entorno
+        Currentenvironment = previousEnvironment;
+        return defaultVoid;
+    }
+    finally {
+        loopDepth--; // Decrementar contador de bucles
+    }
+}
+
+    public void VisitForBody(LanguageParser.ForStmtContext context) {
+    ValueWrapper condition = Visit(context.expr(0));
+    var lastEnvironment = Currentenvironment;
+    
+    if (condition is not BoolValue) {
+        throw new SemanticError("Condición inválida", context.Start);
+    }
+    
+    try {
+        while (condition is BoolValue boolCondition && boolCondition.Value) {
+            try {
                 Visit(context.stmt());
                 Visit(context.expr(1));
                 condition = Visit(context.expr(0));
+            } catch (ContinueException) {
+                //Si se lanza una excepción de tipo ContinueException, continuamos con la siguiente iteración
+                Visit(context.expr(1));
+                condition = Visit(context.expr(0));
             }
-        }catch(BreakException){
-            //Si se lanza una excepcion de tipo BreakException, salimos del ciclo
-            Currentenvironment = lastEnvironment;
         }
-        catch(ContinueException){
-            //Si se lanza una excepcion de tipo ContinueException, continuamos con la siguiente iteracion
-            Currentenvironment = lastEnvironment;
-            Visit(context.expr(1));
-            VisitForBody(context);
-        }    
+    } catch (BreakException) {
+        //Si se lanza una excepción de tipo BreakException, salimos del ciclo
+    }
 }
 
     
     //VisitForInit
     //visitBreakStmt
-    public override ValueWrapper VisitBreakStmt(LanguageParser.BreakStmtContext context){
-        throw new BreakException();
+    public override ValueWrapper VisitBreakStmt(LanguageParser.BreakStmtContext context) {
+    // Verificar que estamos dentro de un bucle o switch
+    if (!InLoopOrSwitch()) {
+        throw new SemanticError("La sentencia break solo puede usarse dentro de un bucle o switch", context.Start);
     }
+    
+    // Lanzar la excepción de break
+    throw new BreakException();
+}
     //visitContinueStmt
-    public override ValueWrapper VisitContinueStmt(LanguageParser.ContinueStmtContext context){
-        throw new ContinueException();
+    public override ValueWrapper VisitContinueStmt(LanguageParser.ContinueStmtContext context) {
+    // Verificar que estamos dentro de un bucle
+    if (!InLoop()) {
+        throw new SemanticError("La sentencia continue solo puede usarse dentro de un bucle", context.Start);
     }
+    
+    // Lanzar la excepción de continue
+    throw new ContinueException();
+}
     //visitReturnStmt
-    public override ValueWrapper VisitReturnStmt(LanguageParser.ReturnStmtContext context){
-        ValueWrapper value = defaultVoid;
-        if (context.expr() != null){
-            value = Visit(context.expr());
-        } 
-        throw new ReturnException(value);
-    }
+    public override ValueWrapper VisitReturnStmt(LanguageParser.ReturnStmtContext context) {
+    // Obtener el valor de retorno si está presente
+    ValueWrapper returnValue = context.expr() != null 
+        ? Visit(context.expr()) 
+        : defaultVoid;
+    
+    // Lanzar la excepción de return con el valor
+    throw new ReturnException(returnValue);
+}
 
     //visitCallee
     public override ValueWrapper VisitCallee(LanguageParser.CalleeContext context){
@@ -613,5 +814,60 @@ var lastEnvironment = Currentenvironment;
     
     throw new SemanticError($"El operador || requiere operandos booleanos, no {left.TypeName} y {right.TypeName}", context.Start);
 }
+
+
+//VisitIncrement
+
+public override ValueWrapper VisitIncrement(LanguageParser.IncrementContext context) {
+    // Obtener el identificador
+    string id = context.ID().GetText();
+    
+    // Obtener su valor actual
+    ValueWrapper value = Currentenvironment.GetVariable(id, context.Start);
+    
+    // Incrementar según el tipo
+    if (value is IntValue intVal) {
+        IntValue newValue = new IntValue(intVal.Value + 1);
+        Currentenvironment.AssignVariable(id, newValue, context.Start);
+        return intVal; // Devuelve el valor original (post-incremento)
+    } 
+    else if (value is FloatValue floatVal) {
+        FloatValue newValue = new FloatValue(floatVal.Value + 1);
+        Currentenvironment.AssignVariable(id, newValue, context.Start);
+        return floatVal; // Devuelve el valor original (post-incremento)
+    } 
+    else {
+        throw new SemanticError("El operador ++ solo puede aplicarse a valores numéricos", context.Start);
+    }
+}
+//VisitDecrement
+
+public override ValueWrapper VisitDecrement(LanguageParser.DecrementContext context) {
+    // Obtener el identificador
+    string id = context.ID().GetText();
+    
+    // Obtener su valor actual
+    ValueWrapper value = Currentenvironment.GetVariable(id, context.Start);
+    
+    // Decrementar según el tipo
+    if (value is IntValue intVal) {
+        IntValue newValue = new IntValue(intVal.Value - 1);
+        Currentenvironment.AssignVariable(id, newValue, context.Start);
+        return intVal; // Devuelve el valor original (post-decremento)
+    } 
+    else if (value is FloatValue floatVal) {
+        FloatValue newValue = new FloatValue(floatVal.Value - 1);
+        Currentenvironment.AssignVariable(id, newValue, context.Start);
+        return floatVal; // Devuelve el valor original (post-decremento)
+    } 
+    else {
+        throw new SemanticError("El operador -- solo puede aplicarse a valores numéricos", context.Start);
+    }
+}
+
+// VisitSliceType
+
+//VisitSliceLiteral
+//VisitIndexAccess
     
 }

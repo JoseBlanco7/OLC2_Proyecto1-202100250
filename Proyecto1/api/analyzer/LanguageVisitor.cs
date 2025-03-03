@@ -85,6 +85,13 @@ public interface ILanguageVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitIfStmt([NotNull] LanguageParser.IfStmtContext context);
 	/// <summary>
+	/// Visit a parse tree produced by the <c>SwitchStmt</c>
+	/// labeled alternative in <see cref="LanguageParser.stmt"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitSwitchStmt([NotNull] LanguageParser.SwitchStmtContext context);
+	/// <summary>
 	/// Visit a parse tree produced by the <c>WhileStmt</c>
 	/// labeled alternative in <see cref="LanguageParser.stmt"/>.
 	/// </summary>
@@ -98,6 +105,13 @@ public interface ILanguageVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitForStmt([NotNull] LanguageParser.ForStmtContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>ForConditionStmt</c>
+	/// labeled alternative in <see cref="LanguageParser.stmt"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitForConditionStmt([NotNull] LanguageParser.ForConditionStmtContext context);
 	/// <summary>
 	/// Visit a parse tree produced by the <c>BreakStmt</c>
 	/// labeled alternative in <see cref="LanguageParser.stmt"/>.
@@ -119,6 +133,30 @@ public interface ILanguageVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitReturnStmt([NotNull] LanguageParser.ReturnStmtContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="LanguageParser.elseifStmt"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitElseifStmt([NotNull] LanguageParser.ElseifStmtContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="LanguageParser.elseStmt"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitElseStmt([NotNull] LanguageParser.ElseStmtContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="LanguageParser.caseStmt"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitCaseStmt([NotNull] LanguageParser.CaseStmtContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="LanguageParser.defaultStmt"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitDefaultStmt([NotNull] LanguageParser.DefaultStmtContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="LanguageParser.forInit"/>.
 	/// </summary>
@@ -145,6 +183,13 @@ public interface ILanguageVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitOr([NotNull] LanguageParser.OrContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>Decrement</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitDecrement([NotNull] LanguageParser.DecrementContext context);
 	/// <summary>
 	/// Visit a parse tree produced by the <c>MulDiv</c>
 	/// labeled alternative in <see cref="LanguageParser.expr"/>.
@@ -236,6 +281,13 @@ public interface ILanguageVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitAnd([NotNull] LanguageParser.AndContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>Increment</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitIncrement([NotNull] LanguageParser.IncrementContext context);
 	/// <summary>
 	/// Visit a parse tree produced by the <c>Assign</c>
 	/// labeled alternative in <see cref="LanguageParser.expr"/>.

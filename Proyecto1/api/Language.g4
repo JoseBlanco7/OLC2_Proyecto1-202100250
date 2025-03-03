@@ -24,16 +24,25 @@ typeClause
     | 'nil'
     // Agrega otros tipos que requieras
     ;
-stmt : expr ';'?                                         #ExprStmt
+stmt : expr ';'?                                                #ExprStmt
     | 'fmt.Println(' printArgs ')' ';'?                         #PrintStmt
-    | '{' declaraciones* '}'                            #BlockStmt
-    | IF '(' expr ')' stmt (ELSE stmt)?                 #IfStmt
-    | WHILE '(' expr ')' stmt                           #WhileStmt
-    | FOR '(' forInit expr ';' expr ')' stmt           #ForStmt
-    | BREAK ';'                                         #BreakStmt
-    | CONTINUE ';'                                      #ContinueStmt
-    | RETURN expr? ';'                                  #ReturnStmt;
+    | '{' declaraciones* '}'                                    #BlockStmt
+    | IF '('? expr ')'? stmt elseifStmt* elseStmt?              #IfStmt
+    | SWITCH expr '{' caseStmt* defaultStmt? '}'                #SwitchStmt
+    | WHILE '(' expr ')' stmt                                   #WhileStmt
+    | FOR '('? forInit expr ';' expr ')'? stmt                    #ForStmt
+    | FOR expr stmt                                             #ForConditionStmt
+    | BREAK ';'?                                                 #BreakStmt
+    | CONTINUE ';'?                                              #ContinueStmt
+    | RETURN expr? ';'?                                          #ReturnStmt;
 
+
+elseifStmt: ELSE IF '('? expr ')'? stmt;
+elseStmt: ELSE stmt;
+
+
+caseStmt: CASE expr ':' declaraciones*;
+defaultStmt: DEFAULT ':' declaraciones*;
 
 forInit: varDeclaciones
     | expr ';';
@@ -43,6 +52,8 @@ printArgs: expr (',' expr)*;
 expr:
     '-' expr                                            #Negate
     | '!' expr                                          #Not
+    | ID '++'                                           #Increment
+    | ID '--'                                           #Decrement
     | expr call+                                        #Callee
     | expr op=('*' | '/' | '%') expr                    #MulDiv
     | expr op=('+' | '-') expr                          #AddSub
@@ -75,9 +86,15 @@ WS: [ \t\r\n]+ -> skip;
 
 
 VAR: 'var';
-FOR: 'for';
+
 IF: 'if';
 ELSE: 'else';
+
+SWITCH: 'switch';
+CASE: 'case';
+DEFAULT: 'default';
+
+FOR: 'for';
 WHILE: 'while';
 BREAK: 'break';
 CONTINUE: 'continue';
