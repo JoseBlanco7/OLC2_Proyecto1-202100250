@@ -23,6 +23,14 @@ private bool InLoopOrSwitch() {
     public CompilerVisitor(){
         Currentenvironment = new Environment(null);
         Embeded.Generate(Currentenvironment);
+
+        var dummyToken = new Antlr4.Runtime.CommonToken(1);
+
+        Currentenvironment.DeclareVariable("slices", new SlicesModuleValue(), null);
+        Currentenvironment.DeclareVariable("strings", new StringsModuleValue(), null);
+
+        Currentenvironment.DeclareVariable("len", new FunctionValue(new LenFunction(), "len"), dummyToken);
+    Currentenvironment.DeclareVariable("append", new FunctionValue(new AppendFunction(), "append"), dummyToken);
     }
 
     //VisitProgram
@@ -67,13 +75,25 @@ if (context.typeClause() != null && context.expr() != null && context.GetText().
     return defaultVoid;
 }
     // Caso 2: var <id> <tipo> (sin valor)
-    else if (context.typeClause() != null && context.expr() == null)
+    // Caso 2: var <id> <tipo> (sin valor)
+else if (context.typeClause() != null && context.expr() == null)
+{
+    string id = context.ID().GetText();
+    string declaredType = context.typeClause().GetText();
+    
+    ValueWrapper defaultValue;
+    
+    // Comprobar si es un slice
+    if (declaredType.StartsWith("[]"))
     {
-        string id = context.ID().GetText();
-        string declaredType = context.typeClause().GetText();
-        
-        // Asignar un valor por defecto según el tipo
-        ValueWrapper defaultValue = declaredType switch {
+        // Es un slice, crear uno vacío
+        string elementType = GetSliceElementType(context.typeClause());
+        defaultValue = new SliceValue(elementType);
+    }
+    else
+    {
+        // No es un slice, manejar como antes
+        defaultValue = declaredType switch {
             "int" => new IntValue(0),
             "float64" => new FloatValue(0.0),
             "bool" => new BoolValue(false),
@@ -81,10 +101,11 @@ if (context.typeClause() != null && context.expr() != null && context.GetText().
             "rune" => new RuneValue(' '),   
             _ => throw new SemanticError($"Tipo no soportado: {declaredType}", context.Start)
         };
-        
-        Currentenvironment.DeclareVariable(id, defaultValue, context.Start);
-        return defaultVoid;
     }
+    
+    Currentenvironment.DeclareVariable(id, defaultValue, context.Start);
+    return defaultVoid;
+}
     // Caso 3: <id> := expr (inferencia de tipo)
     else if (context.GetText().Contains(":="))
     {
@@ -125,6 +146,16 @@ if (context.typeClause() != null && context.expr() != null && context.GetText().
             RuneValue r => r.Value.ToString(),
             VoidValue v => "void",
             FunctionValue fn => "<function " + fn.name + ">", 
+            SliceValue slice => $"[{string.Join(", ", slice.Elements.Select(e => e switch {
+                        IntValue i => i.Value.ToString(),
+                        FloatValue f => string.Format("{0:0.0#####}", f.Value),
+                        StringValue s => $"\"{s.Value}\"",
+                        BoolValue b => b.Value.ToString().ToLower(),
+                        RuneValue r => $"'{r.Value}'",
+                        NilValue _ => "nil",
+                        SliceValue sv => sv.ToString(),
+                        _ => e.ToString()
+                    }))}]",
             NilValue _ => "nil",
             _ => throw new SemanticError($"Tipo no soportado: {value.GetType()}", context.Start)
         };
@@ -559,7 +590,7 @@ public override ValueWrapper VisitSwitchStmt(LanguageParser.SwitchStmtContext co
 }
 
 // Método auxiliar para comparar valores
-private bool AreEqual(ValueWrapper value1, ValueWrapper value2) {
+public bool AreEqual(ValueWrapper value1, ValueWrapper value2) {
     if (value1 is IntValue v1Int && value2 is IntValue v2Int) {
         return v1Int.Value == v2Int.Value;
     } 
@@ -696,7 +727,82 @@ private bool AreEqual(ValueWrapper value1, ValueWrapper value2) {
     }
 }
 
+    //VisitForRangeStmt
+    public override ValueWrapper VisitForRangeStmt(LanguageParser.ForRangeStmtContext context) {
+    loopDepth++; // Incrementar contador de bucles
     
+    try {
+        // Evaluar la expresión que proporciona el slice
+        ValueWrapper rangeExpr = Visit(context.expr());
+        
+        // Asegurarse de que sea un slice
+        if (!(rangeExpr is SliceValue sliceValue)) {
+            throw new SemanticError("La expresión range debe ser un slice", context.expr().Start);
+        }
+        
+        // Crear nuevo entorno
+        Environment previousEnvironment = Currentenvironment;
+        Currentenvironment = new Environment(previousEnvironment);
+        
+        // Obtener nombres de variables
+        string indexVar = context.ID(0).GetText();
+        string valueVar = context.ID(1).GetText();
+        
+        try {
+            // Inicializar con valores compatibles con el tipo del slice
+            Currentenvironment.DeclareVariable(indexVar, new IntValue(0), context.ID(0).Symbol);
+            
+            // Crear un valor predeterminado según el tipo del slice
+            ValueWrapper defaultValue;
+            switch (sliceValue.ElementType) {
+                case "int":
+                    defaultValue = new IntValue(0);
+                    break;
+                case "float64":
+                    defaultValue = new FloatValue(0.0);
+                    break;
+                case "string":
+                    defaultValue = new StringValue("");
+                    break;
+                case "bool":
+                    defaultValue = new BoolValue(false);
+                    break;
+                case "rune":
+                    defaultValue = new RuneValue(' ');
+                    break;
+                default:
+                    defaultValue = new NilValue();
+                    break;
+            }
+            
+            Currentenvironment.DeclareVariable(valueVar, defaultValue, context.ID(1).Symbol);
+            
+            // Iterar por el slice
+            for (int i = 0; i < sliceValue.Elements.Count; i++) {
+                // ASIGNAR valores a las variables ya declaradas
+                Currentenvironment.AssignVariable(indexVar, new IntValue(i), context.ID(0).Symbol);
+                Currentenvironment.AssignVariable(valueVar, sliceValue.Elements[i], context.ID(1).Symbol);
+                
+                try {
+                    // Ejecutar el cuerpo del bucle
+                    Visit(context.stmt());
+                } catch (ContinueException) {
+                    // Continúa con la siguiente iteración
+                    continue;
+                }
+            }
+        } catch (BreakException) {
+            // Si hay un break, sale del bucle
+        }
+        
+        // Restaurar entorno
+        Currentenvironment = previousEnvironment;
+        return defaultVoid;
+    }
+    finally {
+        loopDepth--; // Decrementar contador de bucles
+    }
+}
     //VisitForInit
     //visitBreakStmt
     public override ValueWrapper VisitBreakStmt(LanguageParser.BreakStmtContext context) {
@@ -744,18 +850,25 @@ private bool AreEqual(ValueWrapper value1, ValueWrapper value2) {
     }
 
     public ValueWrapper VisitCall(Invocable invocable, LanguageParser.ArgContext context){
-        List<ValueWrapper> arguments = new List<ValueWrapper>();
-        if(context != null){
-            foreach(var expr in context.expr()){
-                arguments.Add(Visit(expr));
-            }
+    List<ValueWrapper> arguments = new List<ValueWrapper>();
+    if(context != null){
+        foreach(var expr in context.expr()){
+            arguments.Add(Visit(expr));
         }
-        if (context != null && arguments.Count != invocable.Arity()){
-            throw new SemanticError("Numero de argumentos incorrecto", context.Start);
-        } 
-        return invocable.Invoke(arguments, this);
-
     }
+    
+    // Modificar esta validación para manejar funciones variadicas
+    int arity = invocable.Arity();
+    if (arity >= 0 && arguments.Count != arity){
+        throw new SemanticError("Numero de argumentos incorrecto", context.Start);
+    } 
+    else if (arity < 0 && arguments.Count < Math.Abs(arity)) {
+        // Para funciones variadicas, verificar que al menos tenga |arity| argumentos
+        throw new SemanticError($"Se requieren al menos {Math.Abs(arity)} argumentos", context.Start);
+    }
+    
+    return invocable.Invoke(arguments, this);
+}
 
     // VisitNil
     public override ValueWrapper VisitNil(LanguageParser.NilContext context){
@@ -868,6 +981,135 @@ public override ValueWrapper VisitDecrement(LanguageParser.DecrementContext cont
 // VisitSliceType
 
 //VisitSliceLiteral
+public override ValueWrapper VisitSliceLiteral(LanguageParser.SliceLiteralContext context)
+{
+    // 1. Lees el tipo de elemento del slice. 
+    //    Visitas typeClause y obtienes, por ejemplo, "int" o "float64", etc.
+    string elementType = GetSliceElementType(context.typeClause());
+
+    // 2. Preparamos la lista con los valores que se parsearon en expressionList
+    var elements = new List<ValueWrapper>();
+    if (context.expressionList() != null)
+    {
+        foreach (var exprCtx in context.expressionList().expr())
+        {
+            ValueWrapper value = Visit(exprCtx);
+
+            // (Opcional) Podrías verificar compatibilidad de tipos
+            // if (!IsCompatibleType(value, elementType)) { ... }
+
+            elements.Add(value);
+        }
+    }
+
+    // 3. Creamos el SliceValue y lo devolvemos
+    return new SliceValue(elementType, elements);
+}
+
+private string GetSliceElementType(LanguageParser.TypeClauseContext ctx)
+{
+    // Caso: typeClause -> '[' ']' typeClause
+    if (ctx.ChildCount == 3 
+        && ctx.GetChild(0).GetText() == "[" 
+        && ctx.GetChild(1).GetText() == "]")
+    {
+        // El tercer hijo es otro typeClause
+        var innerType = ctx.GetChild(2) as LanguageParser.TypeClauseContext;
+        return "[]" + GetSliceElementType(innerType);
+    }
+
+    // Caso base: int, float64, bool, ...
+    return ctx.GetText();
+}
 //VisitIndexAccess
+public override ValueWrapper VisitIndexAccess(LanguageParser.IndexAccessContext context) {
+    ValueWrapper collection = Visit(context.expr(0));
+    ValueWrapper indexExpr = Visit(context.expr(1));
     
+    if (!(collection is SliceValue sliceValue)) {
+        throw new SemanticError("El operador [] solo puede aplicarse a slices", context.Start);
+    }
+    
+    if (!(indexExpr is IntValue indexValue)) {
+        throw new SemanticError("El índice debe ser un número entero", context.expr(1).Start);
+    }
+    
+    if (indexValue.Value < 0 || indexValue.Value >= sliceValue.Elements.Count) {
+        throw new SemanticError($"Índice {indexValue.Value} fuera de rango (0 a {sliceValue.Elements.Count - 1})", context.Start);
+    }
+    
+    return sliceValue.Elements[indexValue.Value];
+}
+    //VisitIndexAssign
+    public override ValueWrapper VisitIndexAssign(LanguageParser.IndexAssignContext context) {
+    // 1. Obtener el slice
+    ValueWrapper collection = Visit(context.expr(0));
+    if (!(collection is SliceValue sliceValue)) {
+        throw new SemanticError("El operador [] solo puede aplicarse a slices", context.Start);
+    }
+    
+    // 2. Obtener el índice
+    ValueWrapper indexExpr = Visit(context.expr(1));
+    if (!(indexExpr is IntValue indexValue)) {
+        throw new SemanticError("El índice debe ser un número entero", context.expr(1).Start);
+    }
+    
+    // 3. Obtener el valor a asignar
+    ValueWrapper newValue = Visit(context.expr(2));
+
+    // 4. (Opcional) Verificar que sea compatible con sliceValue.ElementType
+    if (!IsCompatibleType(newValue, sliceValue.ElementType)) {
+        throw new SemanticError($"No se puede asignar un {newValue.TypeName} a un slice de tipo {sliceValue.ElementType}", context.Start);
+    }
+
+    // 5. Aplicar la asignación
+    //    - Si indexValue.Value es mayor que el límite, expandir con nil o tu lógica
+    while (indexValue.Value >= sliceValue.Elements.Count) {
+        sliceValue.Elements.Add(new NilValue());
+    }
+    
+    sliceValue.Elements[indexValue.Value] = newValue;
+    return newValue;
+}
+
+public bool IsCompatibleType(ValueWrapper value, string typeName) {
+    return (typeName == "int" && value is IntValue) ||
+        (typeName == "float64" && (value is FloatValue || value is IntValue)) ||
+        (typeName == "bool" && value is BoolValue) ||
+        (typeName == "string" && value is StringValue) ||
+        (typeName == "rune" && value is RuneValue);
+}
+
+
+    //VisitDotCallee    
+public override ValueWrapper VisitDotCallee(LanguageParser.DotCalleeContext context) {
+    // Obtener el valor base (ej: 'slices' en slices.Index)
+    ValueWrapper baseValue = Visit(context.expr());
+    
+    // Obtener el nombre del método (ej: 'Index' en slices.Index)
+    string methodName = context.ID().GetText();
+    
+    // Verificar si es un módulo con funciones
+    if (baseValue is SlicesModuleValue slicesModule)
+    {
+        Invocable function = slicesModule.GetFunction(methodName);
+        if (function != null)
+        {
+            // Llamar a la función con los argumentos
+            return VisitCall(function, context.call().arg());
+        }
+    }
+    else if (baseValue is StringsModuleValue stringsModule)
+    {
+        Invocable function = stringsModule.GetFunction(methodName);
+        if (function != null)
+        {
+            // Llamar a la función con los argumentos
+            return VisitCall(function, context.call().arg());
+        }
+    }
+    
+    throw new SemanticError($"El método {methodName} no existe en {baseValue.TypeName}", context.Start);
+}
+
 }

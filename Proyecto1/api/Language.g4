@@ -22,6 +22,7 @@ typeClause
     | 'string'
     | 'rune'
     | 'nil'
+    | '[' ']' typeClause
     // Agrega otros tipos que requieras
     ;
 stmt : expr ';'?                                                #ExprStmt
@@ -32,6 +33,7 @@ stmt : expr ';'?                                                #ExprStmt
     | WHILE '(' expr ')' stmt                                   #WhileStmt
     | FOR '('? forInit expr ';' expr ')'? stmt                    #ForStmt
     | FOR expr stmt                                             #ForConditionStmt
+    | FOR ID ',' ID ':=' 'range' expr stmt                      #ForRangeStmt
     | BREAK ';'?                                                 #BreakStmt
     | CONTINUE ';'?                                              #ContinueStmt
     | RETURN expr? ';'?                                          #ReturnStmt;
@@ -70,11 +72,19 @@ expr:
     | INT                                               #Int  
     | RUNE                                              #Rune 
     | 'nil'                                             #Nil
+    | '[' ']' typeClause '{' expressionList? '}'     #SliceLiteral
+    | expr '[' expr ']'                                     #IndexAccess
+    | expr '[' expr ']' '=' expr                            #IndexAssign
+    | expr '.' ID call                                #DotCallee
     | ID                                                #Id
     | '(' expr ')'                                      #Parens;
 
 call: '(' arg? ')';
 arg: expr (',' expr)*;
+
+expressionList
+    : expr (',' expr)*
+    ;
 
 INT: [0-9]+;
 BOOL: 'true' | 'false';
@@ -93,6 +103,8 @@ ELSE: 'else';
 SWITCH: 'switch';
 CASE: 'case';
 DEFAULT: 'default';
+
+DOT: '.';
 
 FOR: 'for';
 WHILE: 'while';
