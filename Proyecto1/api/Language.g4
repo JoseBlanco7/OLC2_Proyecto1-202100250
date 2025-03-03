@@ -10,9 +10,9 @@ declaraciones: varDeclaciones
     | stmt;
 
 varDeclaciones: 
-    'var' ID typeClause '=' expr ';'?
-    | 'var' ID typeClause ';'?
-    | ID ':=' expr ';'?;       
+    VAR ID typeClause '=' expr ';'?
+    | VAR ID typeClause ';'?
+    | ID ':=' expr ';'?;      
 
 
 typeClause
@@ -25,27 +25,33 @@ typeClause
     // Agrega otros tipos que requieras
     ;
 stmt : expr ';'?                                         #ExprStmt
-    | 'fmt.print(' expr ')' ';'?                         #PrintStmt
+    | 'fmt.Println(' printArgs ')' ';'?                         #PrintStmt
     | '{' declaraciones* '}'                            #BlockStmt
-    | 'if' '(' expr ')' stmt ('else' stmt)?             #IfStmt
-    | 'while' '(' expr ')' stmt                         #WhileStmt
-    | 'for' '(' forInit expr ';' expr ')' stmt          #ForStmt
-    | 'break' ';'                                       #BreakStmt
-    | 'continue' ';'                                    #ContinueStmt
-    | 'return' expr? ';'                                #ReturnStmt;
- 
+    | IF '(' expr ')' stmt (ELSE stmt)?                 #IfStmt
+    | WHILE '(' expr ')' stmt                           #WhileStmt
+    | FOR '(' forInit expr ';' expr ')' stmt           #ForStmt
+    | BREAK ';'                                         #BreakStmt
+    | CONTINUE ';'                                      #ContinueStmt
+    | RETURN expr? ';'                                  #ReturnStmt;
+
 
 forInit: varDeclaciones
     | expr ';';
- 
+
+printArgs: expr (',' expr)*;
 
 expr:
     '-' expr                                            #Negate
+    | '!' expr                                          #Not
     | expr call+                                        #Callee
-    | expr op=('*' | '/') expr                          #MulDiv
+    | expr op=('*' | '/' | '%') expr                    #MulDiv
     | expr op=('+' | '-') expr                          #AddSub
     | expr op=('>' | '<' | '>=' | '<=') expr            #Relational
     | expr op=('==' | '!=') expr                        #Equality
+    | expr '&&' expr                                    #And
+    | expr '||' expr                                    #Or
+    | ID '+=' expr                                      #AssignAdd
+    | ID '-=' expr                                      #AssignSub
     | ID '=' expr                                       #Assign
     | BOOL                                              #Bool
     | FLOAT                                             #Float
@@ -66,6 +72,19 @@ STRING: '"' (ESC | ~["\\])* '"';
 fragment ESC: '\\' [btnfr"\\];
 RUNE: '\'' . '\'';
 WS: [ \t\r\n]+ -> skip;
+
+
+VAR: 'var';
+FOR: 'for';
+IF: 'if';
+ELSE: 'else';
+WHILE: 'while';
+BREAK: 'break';
+CONTINUE: 'continue';
+RETURN: 'return';
+NIL: 'nil';
+
+
 ID: [a-zA-Z_][a-zA-Z0-9_]*;
 COMMENT: '//' ~[\r\n]* -> skip;
 ML_COMMENT: '/*' .*? '*/' -> skip;
