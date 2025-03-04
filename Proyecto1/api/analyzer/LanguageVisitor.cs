@@ -296,6 +296,13 @@ public interface ILanguageVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitAssignAdd([NotNull] LanguageParser.AssignAddContext context);
 	/// <summary>
+	/// Visit a parse tree produced by the <c>ArrayLiteral</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitArrayLiteral([NotNull] LanguageParser.ArrayLiteralContext context);
+	/// <summary>
 	/// Visit a parse tree produced by the <c>Nil</c>
 	/// labeled alternative in <see cref="LanguageParser.expr"/>.
 	/// </summary>
@@ -370,6 +377,18 @@ public interface ILanguageVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitArg([NotNull] LanguageParser.ArgContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="LanguageParser.arrayItems"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitArrayItems([NotNull] LanguageParser.ArrayItemsContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="LanguageParser.arrayItem"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitArrayItem([NotNull] LanguageParser.ArrayItemContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="LanguageParser.expressionList"/>.
 	/// </summary>

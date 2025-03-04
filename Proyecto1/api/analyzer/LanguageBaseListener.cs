@@ -563,6 +563,20 @@ public partial class LanguageBaseListener : ILanguageListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitAssignAdd([NotNull] LanguageParser.AssignAddContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by the <c>ArrayLiteral</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterArrayLiteral([NotNull] LanguageParser.ArrayLiteralContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>ArrayLiteral</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitArrayLiteral([NotNull] LanguageParser.ArrayLiteralContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by the <c>Nil</c>
 	/// labeled alternative in <see cref="LanguageParser.expr"/>.
 	/// <para>The default implementation does nothing.</para>
@@ -712,6 +726,30 @@ public partial class LanguageBaseListener : ILanguageListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitArg([NotNull] LanguageParser.ArgContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="LanguageParser.arrayItems"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterArrayItems([NotNull] LanguageParser.ArrayItemsContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="LanguageParser.arrayItems"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitArrayItems([NotNull] LanguageParser.ArrayItemsContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="LanguageParser.arrayItem"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterArrayItem([NotNull] LanguageParser.ArrayItemContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="LanguageParser.arrayItem"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitArrayItem([NotNull] LanguageParser.ArrayItemContext context) { }
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="LanguageParser.expressionList"/>.
 	/// <para>The default implementation does nothing.</para>

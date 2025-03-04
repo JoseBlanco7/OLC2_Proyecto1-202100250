@@ -46,7 +46,7 @@ public record NilValue : ValueWrapper
 public record SliceValue : ValueWrapper
 {
     public List<ValueWrapper> Elements { get; }
-    public string ElementType { get; }
+    public string ElementType { get; set; }
 
     public SliceValue(string elementType) {
         Elements = new List<ValueWrapper>();

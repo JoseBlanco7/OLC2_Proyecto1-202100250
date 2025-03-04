@@ -72,19 +72,23 @@ expr:
     | INT                                               #Int  
     | RUNE                                              #Rune 
     | 'nil'                                             #Nil
-    | '[' ']' typeClause '{' expressionList? '}'     #SliceLiteral
-    | expr '[' expr ']'                                     #IndexAccess
-    | expr '[' expr ']' '=' expr                            #IndexAssign
-    | expr '.' ID call                                #DotCallee
+    | '[' ']' typeClause '{' arrayItems? '}'        #SliceLiteral
+    | '{' expressionList? '}'                           #ArrayLiteral
+    | expr '[' expr ']'                                 #IndexAccess
+    | expr '[' expr ']' '=' expr                        #IndexAssign
+    | expr '.' ID call                                  #DotCallee
     | ID                                                #Id
     | '(' expr ')'                                      #Parens;
 
 call: '(' arg? ')';
 arg: expr (',' expr)*;
 
-expressionList
-    : expr (',' expr)*
-    ;
+arrayItems: arrayItem (',' arrayItem)* ','?;
+arrayItem: expr;
+
+expressionList: expr (',' expr)*;
+
+
 
 INT: [0-9]+;
 BOOL: 'true' | 'false';

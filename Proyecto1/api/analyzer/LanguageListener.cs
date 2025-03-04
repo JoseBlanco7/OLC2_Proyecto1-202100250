@@ -480,6 +480,18 @@ public interface ILanguageListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitAssignAdd([NotNull] LanguageParser.AssignAddContext context);
 	/// <summary>
+	/// Enter a parse tree produced by the <c>ArrayLiteral</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterArrayLiteral([NotNull] LanguageParser.ArrayLiteralContext context);
+	/// <summary>
+	/// Exit a parse tree produced by the <c>ArrayLiteral</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitArrayLiteral([NotNull] LanguageParser.ArrayLiteralContext context);
+	/// <summary>
 	/// Enter a parse tree produced by the <c>Nil</c>
 	/// labeled alternative in <see cref="LanguageParser.expr"/>.
 	/// </summary>
@@ -607,6 +619,26 @@ public interface ILanguageListener : IParseTreeListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	void ExitArg([NotNull] LanguageParser.ArgContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="LanguageParser.arrayItems"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterArrayItems([NotNull] LanguageParser.ArrayItemsContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="LanguageParser.arrayItems"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitArrayItems([NotNull] LanguageParser.ArrayItemsContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="LanguageParser.arrayItem"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterArrayItem([NotNull] LanguageParser.ArrayItemContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="LanguageParser.arrayItem"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitArrayItem([NotNull] LanguageParser.ArrayItemContext context);
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="LanguageParser.expressionList"/>.
 	/// </summary>

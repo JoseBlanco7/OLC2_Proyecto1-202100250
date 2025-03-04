@@ -749,34 +749,43 @@ public bool AreEqual(ValueWrapper value1, ValueWrapper value2) {
         string valueVar = context.ID(1).GetText();
         
         try {
-            // Inicializar con valores compatibles con el tipo del slice
-            Currentenvironment.DeclareVariable(indexVar, new IntValue(0), context.ID(0).Symbol);
-            
-            // Crear un valor predeterminado según el tipo del slice
-            ValueWrapper defaultValue;
-            switch (sliceValue.ElementType) {
-                case "int":
-                    defaultValue = new IntValue(0);
-                    break;
-                case "float64":
-                    defaultValue = new FloatValue(0.0);
-                    break;
-                case "string":
-                    defaultValue = new StringValue("");
-                    break;
-                case "bool":
-                    defaultValue = new BoolValue(false);
-                    break;
-                case "rune":
-                    defaultValue = new RuneValue(' ');
-                    break;
-                default:
-                    defaultValue = new NilValue();
-                    break;
-            }
-            
-            Currentenvironment.DeclareVariable(valueVar, defaultValue, context.ID(1).Symbol);
-            
+    // Inicializar con valores compatibles con el tipo del slice
+    Currentenvironment.DeclareVariable(indexVar, new IntValue(0), context.ID(0).Symbol);
+    
+    // Crear un valor predeterminado según el tipo del slice
+    ValueWrapper defaultValue;
+    
+    // Comprobar si el ElementType es otro slice (comienza con [])
+    if (sliceValue.ElementType.StartsWith("[]")) {
+        // Es un slice anidado, crear un slice vacío con el tipo correcto
+        defaultValue = new SliceValue(sliceValue.ElementType);
+    } else {
+        // No es un slice anidado, usar la lógica actual
+        switch (sliceValue.ElementType) {
+            case "int":
+                defaultValue = new IntValue(0);
+                break;
+            case "float64":
+                defaultValue = new FloatValue(0.0);
+                break;
+            case "string":
+                defaultValue = new StringValue("");
+                break;
+            case "bool":
+                defaultValue = new BoolValue(false);
+                break;
+            case "rune":
+                defaultValue = new RuneValue(' ');
+                break;
+            default:
+                defaultValue = new NilValue();
+                break;
+        }
+    }
+    
+    Currentenvironment.DeclareVariable(valueVar, defaultValue, context.ID(1).Symbol);
+    
+    // Resto del código igual...
             // Iterar por el slice
             for (int i = 0; i < sliceValue.Elements.Count; i++) {
                 // ASIGNAR valores a las variables ya declaradas
@@ -983,32 +992,52 @@ public override ValueWrapper VisitDecrement(LanguageParser.DecrementContext cont
 //VisitSliceLiteral
 public override ValueWrapper VisitSliceLiteral(LanguageParser.SliceLiteralContext context)
 {
-    // 1. Lees el tipo de elemento del slice. 
-    //    Visitas typeClause y obtienes, por ejemplo, "int" o "float64", etc.
+    // 1. Obtener el tipo, por ejemplo: "int", "[]int", "[][]float64", etc.
     string elementType = GetSliceElementType(context.typeClause());
 
-    // 2. Preparamos la lista con los valores que se parsearon en expressionList
+    // 2. Construir la lista de elementos
     var elements = new List<ValueWrapper>();
-    if (context.expressionList() != null)
+    if (context.arrayItems() != null)  // Cambiado de expressionList a arrayItems
     {
-        foreach (var exprCtx in context.expressionList().expr())
+        // Cada arrayItem puede ser un literal primitivo o un slice literal
+        foreach (var arrayItemCtx in context.arrayItems().arrayItem())  // Ajustado para arrayItems
         {
-            ValueWrapper value = Visit(exprCtx);
+            ValueWrapper value = Visit(arrayItemCtx.expr());  // Acceder a expr() desde arrayItem
 
-            // (Opcional) Podrías verificar compatibilidad de tipos
-            // if (!IsCompatibleType(value, elementType)) { ... }
+            // 3. Manejar tipos para slices multidimensionales
+            // Si elementType comienza con "[]" (por ejemplo "[]int") y el valor es un SliceValue 
+            // sin tipo (creado por VisitArrayLiteral), asignar el tipo adecuado
+            if (elementType.StartsWith("[]") && value is SliceValue sliceVal && string.IsNullOrEmpty(sliceVal.ElementType))
+            {
+                // Asignar el tipo adecuado (quitar el "[]" inicial del elementType)
+                string innerType = elementType.Substring(2);
+                sliceVal.ElementType = innerType;
+
+                // Si hay más niveles anidados, procesar recursivamente
+                if (innerType.StartsWith("[]"))
+                {
+                    foreach (var innerElement in sliceVal.Elements)
+                    {
+                        if (innerElement is SliceValue innerSlice && string.IsNullOrEmpty(innerSlice.ElementType))
+                        {
+                            innerSlice.ElementType = innerType.Substring(2);
+                        }
+                    }
+                }
+            }
 
             elements.Add(value);
         }
     }
 
-    // 3. Creamos el SliceValue y lo devolvemos
+    // 4. Crear el SliceValue con su tipo y elementos
     return new SliceValue(elementType, elements);
 }
 
+// Método para armar la cadena de tipo, como []int o [][]float64
 private string GetSliceElementType(LanguageParser.TypeClauseContext ctx)
 {
-    // Caso: typeClause -> '[' ']' typeClause
+    // Si la definición inicia con "[]" se repite recursivamente
     if (ctx.ChildCount == 3 
         && ctx.GetChild(0).GetText() == "[" 
         && ctx.GetChild(1).GetText() == "]")
@@ -1017,67 +1046,99 @@ private string GetSliceElementType(LanguageParser.TypeClauseContext ctx)
         var innerType = ctx.GetChild(2) as LanguageParser.TypeClauseContext;
         return "[]" + GetSliceElementType(innerType);
     }
-
-    // Caso base: int, float64, bool, ...
+    // Caso base: int, float64, bool, string, etc.
     return ctx.GetText();
 }
+
+
 //VisitIndexAccess
-public override ValueWrapper VisitIndexAccess(LanguageParser.IndexAccessContext context) {
-    ValueWrapper collection = Visit(context.expr(0));
-    ValueWrapper indexExpr = Visit(context.expr(1));
-    
-    if (!(collection is SliceValue sliceValue)) {
+// siendo un SliceValue, continuamos. Esto ya es suficiente para "[][]…".
+public override ValueWrapper VisitIndexAccess(LanguageParser.IndexAccessContext context)
+{
+    ValueWrapper baseSlice = Visit(context.expr(0));
+    ValueWrapper index = Visit(context.expr(1));
+
+    if (baseSlice is not SliceValue sliceValue)
+    {
         throw new SemanticError("El operador [] solo puede aplicarse a slices", context.Start);
     }
-    
-    if (!(indexExpr is IntValue indexValue)) {
+    if (index is not IntValue intIndex)
+    {
         throw new SemanticError("El índice debe ser un número entero", context.expr(1).Start);
     }
-    
-    if (indexValue.Value < 0 || indexValue.Value >= sliceValue.Elements.Count) {
-        throw new SemanticError($"Índice {indexValue.Value} fuera de rango (0 a {sliceValue.Elements.Count - 1})", context.Start);
+
+    if (intIndex.Value < 0 || intIndex.Value >= sliceValue.Elements.Count)
+    {
+        throw new SemanticError($"Índice {intIndex.Value} fuera de rango", context.Start);
     }
-    
-    return sliceValue.Elements[indexValue.Value];
+
+    // Retornar el elemento (puede ser primitivo o SliceValue si es multidimensional)
+    return sliceValue.Elements[intIndex.Value];
 }
     //VisitIndexAssign
-    public override ValueWrapper VisitIndexAssign(LanguageParser.IndexAssignContext context) {
-    // 1. Obtener el slice
-    ValueWrapper collection = Visit(context.expr(0));
-    if (!(collection is SliceValue sliceValue)) {
+    
+// Para asignaciones tipo mtx[x][y] = valor
+public override ValueWrapper VisitIndexAssign(LanguageParser.IndexAssignContext context)
+{
+    ValueWrapper baseSlice = Visit(context.expr(0));
+    if (baseSlice is not SliceValue sliceValue)
+    {
         throw new SemanticError("El operador [] solo puede aplicarse a slices", context.Start);
     }
-    
-    // 2. Obtener el índice
-    ValueWrapper indexExpr = Visit(context.expr(1));
-    if (!(indexExpr is IntValue indexValue)) {
+
+    ValueWrapper index = Visit(context.expr(1));
+    if (index is not IntValue intIndex)
+    {
         throw new SemanticError("El índice debe ser un número entero", context.expr(1).Start);
     }
-    
-    // 3. Obtener el valor a asignar
+
     ValueWrapper newValue = Visit(context.expr(2));
 
-    // 4. (Opcional) Verificar que sea compatible con sliceValue.ElementType
-    if (!IsCompatibleType(newValue, sliceValue.ElementType)) {
-        throw new SemanticError($"No se puede asignar un {newValue.TypeName} a un slice de tipo {sliceValue.ElementType}", context.Start);
-    }
+    // Verificar rango
+    if (intIndex.Value < 0)
+        throw new SemanticError($"Índice {intIndex.Value} fuera de rango", context.Start);
 
-    // 5. Aplicar la asignación
-    //    - Si indexValue.Value es mayor que el límite, expandir con nil o tu lógica
-    while (indexValue.Value >= sliceValue.Elements.Count) {
+    // Si el índice es mayor que el tamaño, opcionalmente podrías agrandar:
+    while (intIndex.Value >= sliceValue.Elements.Count)
+    {
+        // Insertar NilValue o lógica para expandir
         sliceValue.Elements.Add(new NilValue());
     }
-    
-    sliceValue.Elements[indexValue.Value] = newValue;
+
+    // Verificar compatibilidad de tipo (si deseas)
+    if (!IsCompatibleType(newValue, sliceValue.ElementType))
+    {
+        throw new SemanticError($"No se puede asignar {newValue.TypeName} a un slice de tipo {sliceValue.ElementType}", context.Start);
+    }
+
+    sliceValue.Elements[intIndex.Value] = newValue;
     return newValue;
 }
 
-public bool IsCompatibleType(ValueWrapper value, string typeName) {
+// Si typeName empieza con "[]", verificamos que 'value' también sea un SliceValue.
+public bool IsCompatibleType(ValueWrapper value, string typeName)
+{
+    // Caso: el typeName aún tiene notación "[]..."
+    if (typeName.StartsWith("[]"))
+    {
+        // value debe ser de tipo SliceValue, y su ElementType debe coincidir
+        if (value is SliceValue sliceVal)
+        {
+            // "[]int" -> recortamos "[]" y comparamos con sliceVal.ElementType
+            string nestedType = typeName.Substring(2);
+            return sliceVal.ElementType == nestedType 
+                || nestedType.StartsWith("[]"); // o comparación más fina si quieres
+        }
+        return false;
+    }
+    
+    // Caso base: tipos primitivos
     return (typeName == "int" && value is IntValue) ||
-        (typeName == "float64" && (value is FloatValue || value is IntValue)) ||
-        (typeName == "bool" && value is BoolValue) ||
-        (typeName == "string" && value is StringValue) ||
-        (typeName == "rune" && value is RuneValue);
+           (typeName == "float64" && (value is FloatValue || value is IntValue)) ||
+           (typeName == "bool" && value is BoolValue) ||
+           (typeName == "string" && value is StringValue) ||
+           (typeName == "rune" && value is RuneValue) ||
+           (typeName == "nil" && value is NilValue);
 }
 
 
@@ -1110,6 +1171,25 @@ public override ValueWrapper VisitDotCallee(LanguageParser.DotCalleeContext cont
     }
     
     throw new SemanticError($"El método {methodName} no existe en {baseValue.TypeName}", context.Start);
+}
+
+
+
+public override ValueWrapper VisitArrayLiteral(LanguageParser.ArrayLiteralContext context)
+{
+    // Crea un slice sin tipo específico
+    var elements = new List<ValueWrapper>();
+    
+    if (context.expressionList() != null)
+    {
+        foreach (var exprCtx in context.expressionList().expr())
+        {
+            elements.Add(Visit(exprCtx));
+        }
+    }
+    
+    // Esto será interpretado como una fila de una matriz
+    return new SliceValue("", elements);  // El tipo se inferirá según el contexto
 }
 
 }
