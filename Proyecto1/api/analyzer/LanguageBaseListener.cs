@@ -73,6 +73,30 @@ public partial class LanguageBaseListener : ILanguageListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitVarDeclaciones([NotNull] LanguageParser.VarDeclacionesContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="LanguageParser.structDecl"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterStructDecl([NotNull] LanguageParser.StructDeclContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="LanguageParser.structDecl"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitStructDecl([NotNull] LanguageParser.StructDeclContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="LanguageParser.structMember"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterStructMember([NotNull] LanguageParser.StructMemberContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="LanguageParser.structMember"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitStructMember([NotNull] LanguageParser.StructMemberContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="LanguageParser.typeClause"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
@@ -325,6 +349,20 @@ public partial class LanguageBaseListener : ILanguageListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitPrintArgs([NotNull] LanguageParser.PrintArgsContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by the <c>StructLiteral</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterStructLiteral([NotNull] LanguageParser.StructLiteralContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>StructLiteral</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitStructLiteral([NotNull] LanguageParser.StructLiteralContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by the <c>Callee</c>
 	/// labeled alternative in <see cref="LanguageParser.expr"/>.
 	/// <para>The default implementation does nothing.</para>
@@ -338,6 +376,20 @@ public partial class LanguageBaseListener : ILanguageListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitCallee([NotNull] LanguageParser.CalleeContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>StructFieldAccess</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterStructFieldAccess([NotNull] LanguageParser.StructFieldAccessContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>StructFieldAccess</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitStructFieldAccess([NotNull] LanguageParser.StructFieldAccessContext context) { }
 	/// <summary>
 	/// Enter a parse tree produced by the <c>Or</c>
 	/// labeled alternative in <see cref="LanguageParser.expr"/>.
@@ -534,6 +586,20 @@ public partial class LanguageBaseListener : ILanguageListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitIndexAccess([NotNull] LanguageParser.IndexAccessContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>StructFieldAssign</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterStructFieldAssign([NotNull] LanguageParser.StructFieldAssignContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>StructFieldAssign</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitStructFieldAssign([NotNull] LanguageParser.StructFieldAssignContext context) { }
 	/// <summary>
 	/// Enter a parse tree produced by the <c>Relational</c>
 	/// labeled alternative in <see cref="LanguageParser.expr"/>.
@@ -762,6 +828,30 @@ public partial class LanguageBaseListener : ILanguageListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitExpressionList([NotNull] LanguageParser.ExpressionListContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="LanguageParser.structLiteralList"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterStructLiteralList([NotNull] LanguageParser.StructLiteralListContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="LanguageParser.structLiteralList"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitStructLiteralList([NotNull] LanguageParser.StructLiteralListContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="LanguageParser.structLiteralItem"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterStructLiteralItem([NotNull] LanguageParser.StructLiteralItemContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="LanguageParser.structLiteralItem"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitStructLiteralItem([NotNull] LanguageParser.StructLiteralItemContext context) { }
 
 	/// <inheritdoc/>
 	/// <remarks>The default implementation does nothing.</remarks>

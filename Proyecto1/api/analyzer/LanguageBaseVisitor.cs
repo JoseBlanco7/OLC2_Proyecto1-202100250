@@ -66,6 +66,26 @@ public partial class LanguageBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// <return>The visitor result.</return>
 	public virtual Result VisitVarDeclaciones([NotNull] LanguageParser.VarDeclacionesContext context) { return VisitChildren(context); }
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="LanguageParser.structDecl"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitStructDecl([NotNull] LanguageParser.StructDeclContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="LanguageParser.structMember"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitStructMember([NotNull] LanguageParser.StructMemberContext context) { return VisitChildren(context); }
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="LanguageParser.typeClause"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
@@ -268,6 +288,17 @@ public partial class LanguageBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// <return>The visitor result.</return>
 	public virtual Result VisitPrintArgs([NotNull] LanguageParser.PrintArgsContext context) { return VisitChildren(context); }
 	/// <summary>
+	/// Visit a parse tree produced by the <c>StructLiteral</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitStructLiteral([NotNull] LanguageParser.StructLiteralContext context) { return VisitChildren(context); }
+	/// <summary>
 	/// Visit a parse tree produced by the <c>Callee</c>
 	/// labeled alternative in <see cref="LanguageParser.expr"/>.
 	/// <para>
@@ -278,6 +309,17 @@ public partial class LanguageBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	public virtual Result VisitCallee([NotNull] LanguageParser.CalleeContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>StructFieldAccess</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitStructFieldAccess([NotNull] LanguageParser.StructFieldAccessContext context) { return VisitChildren(context); }
 	/// <summary>
 	/// Visit a parse tree produced by the <c>Or</c>
 	/// labeled alternative in <see cref="LanguageParser.expr"/>.
@@ -432,6 +474,17 @@ public partial class LanguageBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	public virtual Result VisitIndexAccess([NotNull] LanguageParser.IndexAccessContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>StructFieldAssign</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitStructFieldAssign([NotNull] LanguageParser.StructFieldAssignContext context) { return VisitChildren(context); }
 	/// <summary>
 	/// Visit a parse tree produced by the <c>Relational</c>
 	/// labeled alternative in <see cref="LanguageParser.expr"/>.
@@ -614,5 +667,25 @@ public partial class LanguageBaseVisitor<Result> : AbstractParseTreeVisitor<Resu
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	public virtual Result VisitExpressionList([NotNull] LanguageParser.ExpressionListContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="LanguageParser.structLiteralList"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitStructLiteralList([NotNull] LanguageParser.StructLiteralListContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="LanguageParser.structLiteralItem"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitStructLiteralItem([NotNull] LanguageParser.StructLiteralItemContext context) { return VisitChildren(context); }
 }
 } // namespace analyzer

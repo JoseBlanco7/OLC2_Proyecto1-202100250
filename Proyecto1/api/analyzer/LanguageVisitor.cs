@@ -51,6 +51,18 @@ public interface ILanguageVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitVarDeclaciones([NotNull] LanguageParser.VarDeclacionesContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="LanguageParser.structDecl"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitStructDecl([NotNull] LanguageParser.StructDeclContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="LanguageParser.structMember"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitStructMember([NotNull] LanguageParser.StructMemberContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="LanguageParser.typeClause"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -177,12 +189,26 @@ public interface ILanguageVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitPrintArgs([NotNull] LanguageParser.PrintArgsContext context);
 	/// <summary>
+	/// Visit a parse tree produced by the <c>StructLiteral</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitStructLiteral([NotNull] LanguageParser.StructLiteralContext context);
+	/// <summary>
 	/// Visit a parse tree produced by the <c>Callee</c>
 	/// labeled alternative in <see cref="LanguageParser.expr"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitCallee([NotNull] LanguageParser.CalleeContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>StructFieldAccess</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitStructFieldAccess([NotNull] LanguageParser.StructFieldAccessContext context);
 	/// <summary>
 	/// Visit a parse tree produced by the <c>Or</c>
 	/// labeled alternative in <see cref="LanguageParser.expr"/>.
@@ -281,6 +307,13 @@ public interface ILanguageVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitIndexAccess([NotNull] LanguageParser.IndexAccessContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>StructFieldAssign</c>
+	/// labeled alternative in <see cref="LanguageParser.expr"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitStructFieldAssign([NotNull] LanguageParser.StructFieldAssignContext context);
 	/// <summary>
 	/// Visit a parse tree produced by the <c>Relational</c>
 	/// labeled alternative in <see cref="LanguageParser.expr"/>.
@@ -395,5 +428,17 @@ public interface ILanguageVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitExpressionList([NotNull] LanguageParser.ExpressionListContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="LanguageParser.structLiteralList"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitStructLiteralList([NotNull] LanguageParser.StructLiteralListContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="LanguageParser.structLiteralItem"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitStructLiteralItem([NotNull] LanguageParser.StructLiteralItemContext context);
 }
 } // namespace analyzer

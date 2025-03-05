@@ -7,12 +7,20 @@ grammar Language;
 program: declaraciones*;
 
 declaraciones: varDeclaciones 
+    | structDecl
     | stmt;
 
 varDeclaciones: 
     VAR ID typeClause '=' expr ';'?
     | VAR ID typeClause ';'?
-    | ID ':=' expr ';'?;      
+    | ID ':=' expr ';'?  
+    | ID ID '=' expr ';'?  
+    | typeClause ID ':=' expr ';'?  ;
+
+structDecl: 'struct' ID '{' structMember+ '}' ';'?;
+
+// Miembros/atributos del struct
+structMember: typeClause ID ';';
 
 
 typeClause
@@ -23,6 +31,7 @@ typeClause
     | 'rune'
     | 'nil'
     | '[' ']' typeClause
+    | ID
     // Agrega otros tipos que requieras
     ;
 stmt : expr ';'?                                                #ExprStmt
@@ -78,6 +87,9 @@ expr:
     | expr '[' expr ']' '=' expr                        #IndexAssign
     | expr '.' ID call                                  #DotCallee
     | ID                                                #Id
+    | ID '{' structLiteralList? '}'                     #StructLiteral
+    | expr '.' ID                                       #StructFieldAccess
+    | expr '.' ID '=' expr                              #StructFieldAssign
     | '(' expr ')'                                      #Parens;
 
 call: '(' arg? ')';
@@ -88,7 +100,8 @@ arrayItem: expr;
 
 expressionList: expr (',' expr)*;
 
-
+structLiteralList: structLiteralItem (',' structLiteralItem)* ','?;
+structLiteralItem: ID ':' expr;
 
 INT: [0-9]+;
 BOOL: 'true' | 'false';
@@ -109,7 +122,8 @@ CASE: 'case';
 DEFAULT: 'default';
 
 DOT: '.';
-
+// Añadir al final de la sección de tokens
+STRUCT: 'struct';
 FOR: 'for';
 WHILE: 'while';
 BREAK: 'break';

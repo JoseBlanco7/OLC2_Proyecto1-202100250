@@ -47,7 +47,7 @@ private bool InLoopOrSwitch() {
     // Caso 1: var <id> <tipo> = expr
 if (context.typeClause() != null && context.expr() != null && context.GetText().Contains("="))
 {
-    string id = context.ID().GetText();
+    string id = context.ID()[0].GetText();
     string declaredType = context.typeClause().GetText();
     ValueWrapper value = Visit(context.expr());
     
@@ -75,10 +75,10 @@ if (context.typeClause() != null && context.expr() != null && context.GetText().
     return defaultVoid;
 }
     // Caso 2: var <id> <tipo> (sin valor)
-    // Caso 2: var <id> <tipo> (sin valor)
+ // Caso 2: var <id> <tipo> (sin valor)
 else if (context.typeClause() != null && context.expr() == null)
 {
-    string id = context.ID().GetText();
+    string id = context.ID()[0].GetText();
     string declaredType = context.typeClause().GetText();
     
     ValueWrapper defaultValue;
@@ -90,9 +90,51 @@ else if (context.typeClause() != null && context.expr() == null)
         string elementType = GetSliceElementType(context.typeClause());
         defaultValue = new SliceValue(elementType);
     }
+    // Comprobar si es un struct definido
+    else if (Currentenvironment.structDefinitions.ContainsKey(declaredType))
+    {
+        // Es un struct, crear una instancia con valores por defecto
+        var definition = Currentenvironment.structDefinitions[declaredType];
+        var instance = new StructValue(declaredType);
+        
+        // Inicializar campos con valores predeterminados
+        foreach (var field in definition.Fields)
+        {
+            string fieldType = field.Value;
+            ValueWrapper fieldValue;
+            
+            if (fieldType.StartsWith("[]"))
+            {
+                // Campo tipo slice
+                string elementType = fieldType.Substring(2);
+                fieldValue = new SliceValue(elementType);
+            }
+            else if (Currentenvironment.structDefinitions.ContainsKey(fieldType))
+            {
+                // Campo tipo struct - usar nil
+                fieldValue = new NilValue();
+            }
+            else
+            {
+                // Campo tipo primitivo
+                fieldValue = fieldType switch {
+                    "int" => new IntValue(0),
+                    "float64" => new FloatValue(0.0),
+                    "bool" => new BoolValue(false),
+                    "string" => new StringValue(""),
+                    "rune" => new RuneValue(' '),
+                    _ => new NilValue()
+                };
+            }
+            
+            instance.Fields[field.Key] = fieldValue;
+        }
+        
+        defaultValue = instance;
+    }
     else
     {
-        // No es un slice, manejar como antes
+        // No es un slice ni un struct, manejar como antes
         defaultValue = declaredType switch {
             "int" => new IntValue(0),
             "float64" => new FloatValue(0.0),
@@ -109,12 +151,28 @@ else if (context.typeClause() != null && context.expr() == null)
     // Caso 3: <id> := expr (inferencia de tipo)
     else if (context.GetText().Contains(":="))
     {
-        string id = context.ID().GetText();
+        string id = context.ID()[0].GetText();
         ValueWrapper value = Visit(context.expr());
         
         Currentenvironment.DeclareVariable(id, value, context.Start);
         return defaultVoid;
     }
+    // Caso adicional: <tipo> <id> := expr (declaración con tipo explícito e inferencia)
+else if (context.typeClause() != null && context.expr() != null && context.GetText().Contains(":="))
+{
+    string id = context.ID()[0].GetText();
+    string declaredType = context.typeClause().GetText();
+    ValueWrapper value = Visit(context.expr());
+    
+    // Validación de tipos similar al caso 1
+    if (!IsCompatibleType(value, declaredType))
+    {
+        throw new SemanticError($"No se puede asignar un valor de tipo {value.TypeName} a una variable de tipo {declaredType}.", context.Start);
+    }
+    
+    Currentenvironment.DeclareVariable(id, value, context.Start);
+    return defaultVoid;
+}
     else
     {
         throw new SemanticError("Formato de declaración de variable no reconocido.", context.Start);
@@ -157,6 +215,9 @@ else if (context.typeClause() != null && context.expr() == null)
                         _ => e.ToString()
                     }))}]",
             NilValue _ => "nil",
+            
+            // Añadir este caso para manejar structs
+            StructValue structVal => $"{structVal.TypeName}{{{string.Join(", ", structVal.Fields.Select(f => $"{f.Key}: {FormatValueForPrint(f.Value)}"))}}}",
             _ => throw new SemanticError($"Tipo no soportado: {value.GetType()}", context.Start)
         };
         
@@ -171,6 +232,20 @@ else if (context.typeClause() != null && context.expr() == null)
     return defaultVoid;
 }
 
+private string FormatValueForPrint(ValueWrapper value)
+{
+    return value switch {
+        IntValue i => i.Value.ToString(),
+        FloatValue f => string.Format("{0:0.0#####}", f.Value),
+        StringValue s => $"\"{s.Value}\"",
+        BoolValue b => b.Value.ToString(),
+        RuneValue r => $"'{r.Value}'",
+        NilValue _ => "nil",
+        SliceValue slice => slice.ToString(),
+        StructValue structVal => structVal.ToString(),
+        _ => value.ToString()
+    };
+}
     //VisitId
     public override ValueWrapper VisitId(LanguageParser.IdContext context){
         string id = context.ID().GetText();
@@ -442,33 +517,47 @@ public override ValueWrapper VisitAssignSub(LanguageParser.AssignSubContext cont
 
     //VisitEquality
     public override ValueWrapper VisitEquality(LanguageParser.EqualityContext context){
-        ValueWrapper left = Visit(context.expr(0));
-        ValueWrapper right = Visit(context.expr(1));
-        if (left is NilValue || right is NilValue) {
+    ValueWrapper left = Visit(context.expr(0));
+    ValueWrapper right = Visit(context.expr(1));
+    
+    // Modificamos esta parte para permitir comparaciones con nil
+    // Solo permitimos == y != con nil, cualquier otra operación sigue dando error
+    var op = context.op.Text;
+    if ((left is NilValue || right is NilValue) && (op != "==" && op != "!=")) {
         throw new SemanticError("Operacion no soportada en valor nil", context.Start);
-        }
-        var op = context.op.Text;
-        return (left, right, op) switch{
-            (IntValue l, IntValue r, "==") => new BoolValue(l.Value == r.Value),
-            (FloatValue l, FloatValue r, "==") => new BoolValue(l.Value == r.Value),
-            (IntValue l, FloatValue r, "==") => new BoolValue(l.Value == r.Value),
-            (FloatValue l, IntValue r, "==") => new BoolValue(l.Value == r.Value),
-            (BoolValue l, BoolValue r, "==") => new BoolValue(l.Value == r.Value),
-            (StringValue l, StringValue r, "==") => new BoolValue(l.Value == r.Value),
-            (RuneValue l, RuneValue r, "==") => new BoolValue(l.Value == r.Value),
-
-            (IntValue l, IntValue r, "!=") => new BoolValue(l.Value != r.Value),
-            (FloatValue l, FloatValue r, "!=") => new BoolValue(l.Value != r.Value),
-            (IntValue l, FloatValue r, "!=") => new BoolValue(l.Value != r.Value),
-            (FloatValue l, IntValue r, "!=") => new BoolValue(l.Value != r.Value),
-            (BoolValue l, BoolValue r, "!=") => new BoolValue(l.Value != r.Value),
-            (StringValue l, StringValue r, "!=") => new BoolValue(l.Value != r.Value),
-            (RuneValue l, RuneValue r, "!=") => new BoolValue(l.Value != r.Value),
-
-
-            _ => throw new SemanticError($"Operacion no soportada: {left.GetType()} {op} {right.GetType()}", context.Start)
-        };
     }
+    
+    return (left, right, op) switch{
+        // Casos para comparar con nil
+        (NilValue, NilValue, "==") => new BoolValue(true),
+        (NilValue, _, "==") => new BoolValue(false),
+        (_, NilValue, "==") => new BoolValue(false),
+        (NilValue, NilValue, "!=") => new BoolValue(false),
+        (NilValue, _, "!=") => new BoolValue(true),
+        (_, NilValue, "!=") => new BoolValue(true),
+        
+        // Casos existentes
+        (IntValue l, IntValue r, "==") => new BoolValue(l.Value == r.Value),
+        (FloatValue l, FloatValue r, "==") => new BoolValue(l.Value == r.Value),
+        (IntValue l, FloatValue r, "==") => new BoolValue(l.Value == r.Value),
+        (FloatValue l, IntValue r, "==") => new BoolValue(l.Value == r.Value),
+        (BoolValue l, BoolValue r, "==") => new BoolValue(l.Value == r.Value),
+        (StringValue l, StringValue r, "==") => new BoolValue(l.Value == r.Value),
+        (RuneValue l, RuneValue r, "==") => new BoolValue(l.Value == r.Value),
+        (StructValue l, StructValue r, "==") => new BoolValue(l.TypeName == r.TypeName),
+
+        (IntValue l, IntValue r, "!=") => new BoolValue(l.Value != r.Value),
+        (FloatValue l, FloatValue r, "!=") => new BoolValue(l.Value != r.Value),
+        (IntValue l, FloatValue r, "!=") => new BoolValue(l.Value != r.Value),
+        (FloatValue l, IntValue r, "!=") => new BoolValue(l.Value != r.Value),
+        (BoolValue l, BoolValue r, "!=") => new BoolValue(l.Value != r.Value),
+        (StringValue l, StringValue r, "!=") => new BoolValue(l.Value != r.Value),
+        (RuneValue l, RuneValue r, "!=") => new BoolValue(l.Value != r.Value),
+        (StructValue l, StructValue r, "!=") => new BoolValue(l.TypeName != r.TypeName),
+
+        _ => throw new SemanticError($"Operacion no soportada: {left.GetType()} {op} {right.GetType()}", context.Start)
+    };
+}
 
 
     //VisitBlockStmt
@@ -1121,15 +1210,36 @@ public bool IsCompatibleType(ValueWrapper value, string typeName)
     // Caso: el typeName aún tiene notación "[]..."
     if (typeName.StartsWith("[]"))
     {
-        // value debe ser de tipo SliceValue, y su ElementType debe coincidir
+        // value debe ser de tipo SliceValue
         if (value is SliceValue sliceVal)
         {
+            // Si el slice no tiene tipo definido (array literal simple),
+            // considerarlo compatible y actualizar su tipo
+            if (string.IsNullOrEmpty(sliceVal.ElementType))
+            {
+                sliceVal.ElementType = typeName.Substring(2); // Asignar el tipo correcto
+                return true;
+            }
+            
             // "[]int" -> recortamos "[]" y comparamos con sliceVal.ElementType
             string nestedType = typeName.Substring(2);
             return sliceVal.ElementType == nestedType 
-                || nestedType.StartsWith("[]"); // o comparación más fina si quieres
+                || nestedType.StartsWith("[]"); 
         }
         return false;
+    }
+    
+    // Resto del código sin cambios...
+    // Caso para nil - se puede asignar a cualquier struct
+    if (value is NilValue && Currentenvironment.structDefinitions.ContainsKey(typeName))
+    {
+        return true;
+    }
+    
+    // Caso para structs - verificar coincidencia de tipos
+    if (value is StructValue structVal)
+    {
+        return structVal.TypeName == typeName;
     }
     
     // Caso base: tipos primitivos
@@ -1191,5 +1301,209 @@ public override ValueWrapper VisitArrayLiteral(LanguageParser.ArrayLiteralContex
     // Esto será interpretado como una fila de una matriz
     return new SliceValue("", elements);  // El tipo se inferirá según el contexto
 }
+
+//VisitStructDecl
+
+// Visita la declaración del struct
+public override ValueWrapper VisitStructDecl(LanguageParser.StructDeclContext context)
+{
+    // Solo permitir declaraciones en ámbito global
+    if (Currentenvironment.parent != null)
+    {
+        throw new SemanticError("Los structs solo pueden ser declarados en el ámbito global", context.Start);
+    }
+    
+    string structName = context.ID().GetText();
+    var definition = new StructDefinition();
+    
+    // Verificar que tenga al menos un miembro
+    if (context.structMember() == null || context.structMember().Length == 0)
+    {
+        throw new SemanticError($"Struct {structName} debe tener al menos un atributo", context.Start);
+    }
+    
+    // Añadir cada campo a la definición
+    foreach (var memberContext in context.structMember())
+    {
+        string fieldType = memberContext.typeClause().GetText();
+        string fieldName = memberContext.ID().GetText();
+        
+        // Validar que el tipo exista
+        if (fieldType != "int" && fieldType != "float64" && fieldType != "bool" && 
+            fieldType != "string" && fieldType != "rune" && !fieldType.StartsWith("[]"))
+        {
+            // Si no es un tipo primitivo o slice, debe ser un struct
+            try
+            {
+                Currentenvironment.GetStructDefinition(fieldType, memberContext.Start);
+            }
+            catch
+            {
+                throw new SemanticError($"Tipo {fieldType} no reconocido", memberContext.Start);
+            }
+        }
+        
+        definition.AddField(fieldName, fieldType);
+    }
+    
+    // Registrar la definición del struct
+    Currentenvironment.DeclareStruct(structName, definition, context.Start);
+    
+    return defaultVoid;
+}
+
+// Visita la creación de una instancia de struct
+public override ValueWrapper VisitStructLiteral(LanguageParser.StructLiteralContext context)
+{
+    string typeName = context.ID().GetText();
+    
+    // Obtener la definición del struct
+    var definition = Currentenvironment.GetStructDefinition(typeName, context.Start);
+    
+    // Crear la instancia
+    var instance = new StructValue(typeName);
+    
+    // Inicializar campos con valores predeterminados
+    foreach (var field in definition.Fields)
+    {
+        ValueWrapper defaultValue;
+        string fieldType = field.Value;
+        
+        if (fieldType.StartsWith("[]"))
+        {
+            // Es un slice
+            string elementType = fieldType.Substring(2);
+            defaultValue = new SliceValue(elementType);
+        }
+        else if (Currentenvironment.structDefinitions.ContainsKey(fieldType))
+        {
+            // Es otro struct - usar referencia nil
+            defaultValue = new NilValue();
+        }
+        else
+        {
+            // Es un tipo primitivo
+            defaultValue = fieldType switch {
+                "int" => new IntValue(0),
+                "float64" => new FloatValue(0.0),
+                "bool" => new BoolValue(false),
+                "string" => new StringValue(""),
+                "rune" => new RuneValue(' '),
+                _ => throw new SemanticError($"Tipo no soportado: {fieldType}", context.Start)
+            };
+        }
+        
+        instance.Fields[field.Key] = defaultValue;
+    }
+    
+    // Asignar valores iniciales si los hay
+    if (context.structLiteralList() != null)
+    {
+        foreach (var itemContext in context.structLiteralList().structLiteralItem())
+        {
+            string fieldName = itemContext.ID().GetText();
+            ValueWrapper value = Visit(itemContext.expr());
+            
+            // Verificar que el campo exista
+            if (!definition.Fields.ContainsKey(fieldName))
+            {
+                throw new SemanticError($"El campo {fieldName} no existe en el struct {typeName}", itemContext.Start);
+            }
+            
+            // Verificar compatibilidad de tipos
+            string expectedType = definition.Fields[fieldName];
+            if (!IsCompatibleType(value, expectedType))
+            {
+                throw new SemanticError($"Tipo incompatible: se esperaba {expectedType} pero se obtuvo {value.TypeName}", itemContext.Start);
+            }
+            
+            instance.Fields[fieldName] = value;
+        }
+    }
+    
+    return instance;
+}
+
+// Visita el acceso a un campo de struct
+public override ValueWrapper VisitStructFieldAccess(LanguageParser.StructFieldAccessContext context)
+{
+    ValueWrapper baseValue = Visit(context.expr());
+    string fieldName = context.ID().GetText();
+    
+    if (baseValue is not StructValue structValue)
+    {
+        throw new SemanticError($"La operación de campo solo puede aplicarse a structs, no a {baseValue.TypeName}", context.Start);
+    }
+    
+    if (!structValue.Fields.ContainsKey(fieldName))
+    {
+        throw new SemanticError($"El campo {fieldName} no existe en el struct {structValue.TypeName}", context.Start);
+    }
+    
+    return structValue.Fields[fieldName];
+}
+
+// Visita la asignación a un campo de struct
+public override ValueWrapper VisitStructFieldAssign(LanguageParser.StructFieldAssignContext context)
+{
+    ValueWrapper baseValue = Visit(context.expr(0));
+    string fieldName = context.ID().GetText();
+    ValueWrapper newValue = Visit(context.expr(1));
+    
+    if (baseValue is not StructValue structValue)
+    {
+        throw new SemanticError($"La operación de campo solo puede aplicarse a structs, no a {baseValue.TypeName}", context.Start);
+    }
+    
+    if (!structValue.Fields.ContainsKey(fieldName))
+    {
+        throw new SemanticError($"El campo {fieldName} no existe en el struct {structValue.TypeName}", context.Start);
+    }
+    
+    // Obtener el tipo esperado para este campo
+    var structDef = Currentenvironment.GetStructDefinition(structValue.TypeName, context.Start);
+    string expectedType = structDef.Fields[fieldName];
+    
+    // Verificar compatibilidad
+    if (!IsCompatibleType(newValue, expectedType))
+    {
+        throw new SemanticError($"Tipo incompatible: se esperaba {expectedType} pero se obtuvo {newValue.TypeName}", context.Start);
+    }
+    
+    structValue.Fields[fieldName] = newValue;
+    return newValue;
+}
+
+public override ValueWrapper VisitTypeClause(LanguageParser.TypeClauseContext context)
+{
+    string typeName = context.GetText();
+    
+    // Si el tipo es un slice, validarlo
+    if (typeName.StartsWith("[]"))
+    {
+        // Los slices son válidos por defecto
+        return defaultVoid;
+    }
+    
+    // Si el tipo es primitivo, validarlo
+    if (typeName == "int" || typeName == "float64" || typeName == "bool" || 
+        typeName == "string" || typeName == "rune" || typeName == "nil")
+    {
+        return defaultVoid;
+    }
+    
+    // Si no es primitivo ni slice, debe ser un struct - verificarlo
+    try {
+        Currentenvironment.GetStructDefinition(typeName, context.Start);
+        // El struct existe
+    } catch {
+        throw new SemanticError($"Tipo {typeName} no definido", context.Start);
+    }
+    
+    return defaultVoid;
+}
+
+
+
 
 }

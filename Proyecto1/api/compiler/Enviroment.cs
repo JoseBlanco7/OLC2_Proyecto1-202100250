@@ -2,7 +2,7 @@ public class Environment{
 //TODO: parent environment
 
     public Dictionary<string, ValueWrapper> variables = new Dictionary<string, ValueWrapper>();
-    private Environment? parent;
+    public Environment? parent { get; private set; }
 
     public Environment(Environment? parent){
         this.parent = parent;
@@ -45,6 +45,40 @@ public class Environment{
         return parent.AssignVariable(id, value, token);
     }
     throw new SemanticError("Variable " + id + " Not found", token);
+}
+
+// Añadir a tu clase Environment:
+public Dictionary<string, StructDefinition> structDefinitions = new Dictionary<string, StructDefinition>();
+
+public void DeclareStruct(string id, StructDefinition definition, Antlr4.Runtime.IToken token)
+{
+    if (structDefinitions.ContainsKey(id))
+    {
+        throw new SemanticError($"Struct {id} ya fue declarado", token);
+    }
+    else
+    {
+        structDefinitions[id] = definition;
+    }
+}
+
+public StructDefinition GetStructDefinition(string id, Antlr4.Runtime.IToken token)
+{
+    if (structDefinitions.ContainsKey(id))
+    {
+        return structDefinitions[id];
+    }
+    
+    if (parent != null)
+    {
+        return parent.GetStructDefinition(id, token);
+    }
+    
+    throw new SemanticError($"Struct {id} no encontrado", token);
+}
+
+public bool IsStructType(string typeName) {
+    return structDefinitions.ContainsKey(typeName);
 }
 
 }

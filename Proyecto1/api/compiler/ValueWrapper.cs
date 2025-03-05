@@ -67,3 +67,43 @@ public record SliceValue : ValueWrapper
 }
 
 
+// Definición de struct - información de la estructura
+public record StructDefinition
+{
+    public Dictionary<string, string> Fields { get; } = new Dictionary<string, string>();
+    
+    public StructDefinition() {}
+    
+    public void AddField(string fieldName, string fieldType)
+    {
+        Fields.Add(fieldName, fieldType);
+    }
+}
+
+// Instancia de struct - valores reales
+public record StructValue : ValueWrapper
+{
+    private string structTypeName;
+    public Dictionary<string, ValueWrapper> Fields { get; } = new Dictionary<string, ValueWrapper>();
+    
+    public StructValue(string typeName)
+    {
+        structTypeName = typeName;
+    }
+    
+    public override string TypeName => structTypeName;
+    
+    public override string ToString()
+    {
+        var fieldStrings = Fields.Select(f => $"{f.Key}: {f.Value}");
+        return $"{structTypeName}{{{string.Join(", ", fieldStrings)}}}";
+    }
+
+    
+}
+
+
+
+
+
+
